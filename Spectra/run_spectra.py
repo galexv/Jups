@@ -10,7 +10,7 @@ import run_grid
 
 
 phases = [0.0]
-inclinations = [0.0]
+inclinations = [0.45]
 
 planet_name = 'low_grav_clear'
 
@@ -112,7 +112,7 @@ def run_exo(input_paths, inclination_strs, doppler_val):
         os.system('./rt_emission_aerosols.exe')
 
 
-#run_grid.run_all_grid(planet_name, phases, inclinations)
+run_grid.run_all_grid(planet_name, phases, inclinations)
 input_paths, inclination_strs = add_columns(phases, inclinations)
 
 # 0 is off

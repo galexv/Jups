@@ -34,7 +34,6 @@
 
 double Planck(double T, double lambda)
 {
-
   double Bnu, twohnu3_c2, hc_Tkla;
 
   hc_Tkla     = (HPLANCK * CLIGHT) / (T * KBOLTZMANN * lambda);
