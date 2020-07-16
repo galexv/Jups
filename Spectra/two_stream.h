@@ -4,7 +4,7 @@ double Planck(double T, double lambda);
 
 double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
                  double *temperature_array, double *tau_array, \
-                 double NU, double NU_BIN, double* TMI)
+                 double NU, double NU_BIN, double* TMI, double incident_frac)
 {
   double mu_1 = 1.0;
   double mu_0 = 1.0;  // Needs to be adjusted for the solid angle stuff
@@ -116,7 +116,9 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
     TAULS[J] =  -1.0 * (tau_array[J+kmin] - tau_array[J+kmin + 1]);
   }
 
-  // Data Sanitation
+  //**********************************************
+  //* Data Sanitation (Sorry, kinda gross code)  *
+  //**********************************************
   if (TAULS[1] < 1e-8)
   {
     TAULS[1] = TAULS[2];
@@ -165,7 +167,8 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   // Define the energy from other sources (eq 37 and 38, Toon)
   if (NU > 430.0e12)
   {
-    DIRECT = redistribution_param * PI * STELLAR_BB * pow(R_STAR / ORB_SEP, 2.0);
+  	//redistribution param is unused
+    DIRECT = incident_frac * PI * STELLAR_BB * pow(R_STAR / ORB_SEP, 2.0);
     SFCS = RSFX * DIRECT * mu_0 * exp(-(TAUCS[NEW_NLAYER-1] + TAULS[NEW_NLAYER-1]) / mu_0);
   }
   else
@@ -188,9 +191,9 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
     temp_e_val[J]   =  exp(-LAMBDAS[J] * TAULS[J]);
 
     e1[J]   =  1.0 + GAMMA[J] * temp_e_val[J];  //e1                          
-    e2[J]   =  1.0 - GAMMA[J] * temp_e_val[J]; //e2                      
-    e3[J]   =  GAMMA[J] + temp_e_val[J];       //e3                        
-    e4[J]   =  GAMMA[J] - temp_e_val[J];       //e4
+    e2[J]   =  1.0 - GAMMA[J] * temp_e_val[J];  //e2                      
+    e3[J]   =  GAMMA[J] + temp_e_val[J];        //e3                        
+    e4[J]   =  GAMMA[J] - temp_e_val[J];        //e4
   }
 
 

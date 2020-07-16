@@ -28,11 +28,12 @@ Defines input values and files for 3-D emission spectra
 #define NLAMBDA 5000                       /* Number of wavelength points in grid [4616/2598]   */
 
 /* Planet parameters */
-#define INCLINATION <<inclination>>        /* Planet inclination in radians            */
+#define INPUT_INCLINATION <<inclination>>        /* Planet inclination in radians            */
+#define INPUT_PHASE <<phase>>                    /* Planet inclination in degrees           */
 #define G 12.9324                          /* Planet surface gravity                 */
 #define R_PLANET 1.287e+08                 /* Planet radius at base of atmosphere      */
 
-#define ORB_SEP 5.0e+20                  // Orbital Separation This is 1 au in m
+#define ORB_SEP 5.0e+20                     // Orbital Separation This is 1 au in m
 #define STELLAR_TEMP 6000.0                // Stellar Blackbody temperature
 #define R_STAR 1.296e+09                   /* Stellar radius                         */
 #define P_ROT 4.6171                       /* Rotation period in days (= P_ORB for tidally locked planet)    */

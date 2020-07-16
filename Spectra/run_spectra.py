@@ -10,7 +10,7 @@ import run_grid
 
 
 phases = [0.0]
-inclinations = [0.45]
+inclinations = [0.00]
 
 planet_name = 'low_grav_clear'
 
@@ -24,6 +24,7 @@ def add_columns(phases, inclinations):
     input_paths = []              
     output_paths = []
     inclination_strs = []
+    phase_strs = []
 
     columns_to_add = ['c11', 'c12', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18',
                   'c19', 'c110', 'c111', 'c112', 'c113']
@@ -57,14 +58,14 @@ def add_columns(phases, inclinations):
             final_path = 'DATA/Final_' + planet_name + '_phase_{}_inc_{}.txt'.format(phase, inc)
             input_paths.append(final_path)
             inclination_strs.append(inc)
+            phase_strs.append(phase)
             np.savetxt(final_path, numpy_df,
-            #fmt='%.5E\t%.5E\t%i\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E')
             fmt='%-5E\t%-5E\t%i\t%-5E\t%-5E\t%-5E\t%-13E\t%-13E\t%-13E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E')
     
-    return input_paths, inclination_strs
+    return input_paths, inclination_strs, phase_strs
 
 
-def run_exo(input_paths, inclination_strs, doppler_val):
+def run_exo(input_paths, inclination_strs, phase_strs, doppler_val):
     """
     Comment
     """
@@ -101,6 +102,8 @@ def run_exo(input_paths, inclination_strs, doppler_val):
         filedata = filedata.replace("<<input_file>>", "\"" + input_temp + "\"")
         filedata = filedata.replace("<<doppler>>", str(doppler_val))
         filedata = filedata.replace("<<inclination>>", inclination_strs[i])
+        filedata = filedata.replace("<<phase>>", phase_strs[i])
+
 
         # Write the file out again
         with open(inputs_file, 'w') as file:
@@ -113,7 +116,7 @@ def run_exo(input_paths, inclination_strs, doppler_val):
 
 
 run_grid.run_all_grid(planet_name, phases, inclinations)
-input_paths, inclination_strs = add_columns(phases, inclinations)
+input_paths, inclination_strs, phase_strs = add_columns(phases, inclinations)
 
 # 0 is off
 # 1 is everything
@@ -122,7 +125,7 @@ input_paths, inclination_strs = add_columns(phases, inclinations)
 dopplers = [0, 1, 2, 3]
 dopplers = [0]
 for doppler_val in dopplers:
-    run_exo(input_paths, inclination_strs, doppler_val)
+    run_exo(input_paths, inclination_strs, phase_strs, doppler_val)
 
 
 

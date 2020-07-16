@@ -26,7 +26,7 @@ double Planck(double T, double lambda);
 // This is the code that does the two stream calculation
 // In progress, by Isaac Malsky
 double two_stream(int num_layers, int zero_T_layers, double w0, double g0, double *temperature_array, \
-	double *tau_array, double NU, double NU_BIN, double* TMI);
+	double *tau_array, double NU, double NU_BIN, double* TMI, double incident_frac);
 
 double lint2D(double x1, double x2, double y1, double y2, double z1,
               double z2, double z3, double z4, double x, double y);
@@ -71,6 +71,10 @@ int RT_Emit_3D(double PHASE)
     double TMI[NTAU];
     double mean_intensity_top;
     double **malsky_intensity;
+
+    double incident_frac;
+    double incident_lat;
+    double incident_lon;
 
     char OUTPUT_FILE[200];
     sprintf(OUTPUT_FILE, "%s%06.2f.dat", OUTPUT_PREFIX, PHASE);
@@ -295,20 +299,15 @@ int RT_Emit_3D(double PHASE)
     }
     
     /*Geometry*/
-    
     /*Calculating dl longitude and latitude along line-of-sight*/
     for(l=0;l<NLAT;l++)
     {
-        
         lat_rad[l] = atmos.lat[l] * PI/180.0; /*theta, latitude*/
-        
         for(m=0;m<NLON;m++)
         {
             if(atmos.lon[m]>=450.0-PHASE && atmos.lon[m]<=630.0-PHASE)
             {
-                
                 lon_rad[m] = atmos.lon[m] * PI/180.0; /*phi, longitude*/
-                
                 b = R_PLANET;
                 for(j=NTAU-1; j>=0; j--)
                 {
@@ -499,7 +498,7 @@ int RT_Emit_3D(double PHASE)
                             v_los = u_vel*sin(phi_lon_solid[l][m][j]*PI/180.0) + 
                             v_vel*cos(phi_lon_solid[l][m][j]*PI/180.0)*sin(theta_lat_solid[l][m][j]*PI/180.0) - 
                             w_vel*cos(phi_lon_solid[l][m][j]*PI/180.0)*cos(theta_lat_solid[l][m][j]*PI/180.0) + 
-                            (cos(INCLINATION)*(omega*(R_PLANET + atmos.alt[j])*sin(phi_lon_solid[l][m][j]*PI/180.0)*cos(theta_lat_solid[l][m][j]*PI/180.0) + 
+                            (cos(INPUT_INCLINATION)*(omega*(R_PLANET + atmos.alt[j])*sin(phi_lon_solid[l][m][j]*PI/180.0)*cos(theta_lat_solid[l][m][j]*PI/180.0) + 
                             R_VEL*cos((90.0-PHASE)*PI/180.0)));
 
                             delta_lam = atmos.lambda[i]*v_los/CLIGHT;
@@ -565,7 +564,7 @@ int RT_Emit_3D(double PHASE)
                             v_vel = lint2D(atmos.lon[c], atmos.lon[c+1], atmos.lat[o], atmos.lat[o+1], atmos.vel_ns[o][c][j], atmos.vel_ns[o][c+1][j], atmos.vel_ns[o+1][c][j], atmos.vel_ns[o+1][c+1][j], phi_lon_solid[l][m][j]-PHASE, theta_lat_solid[l][m][j]);
                             w_vel = lint2D(atmos.lon[c], atmos.lon[c+1], atmos.lat[o], atmos.lat[o+1], atmos.vel_ve[o][c][j], atmos.vel_ve[o][c+1][j], atmos.vel_ve[o+1][c][j], atmos.vel_ve[o+1][c+1][j], phi_lon_solid[l][m][j]-PHASE, theta_lat_solid[l][m][j]);
                             
-                            v_los = (cos(INCLINATION)*(omega*(R_PLANET + atmos.alt[j])*sin(phi_lon_solid[l][m][j]*PI/180.0)*cos(theta_lat_solid[l][m][j]*PI/180.0) + 
+                            v_los = (cos(INPUT_INCLINATION)*(omega*(R_PLANET + atmos.alt[j])*sin(phi_lon_solid[l][m][j]*PI/180.0)*cos(theta_lat_solid[l][m][j]*PI/180.0) + 
                             R_VEL*cos((90.0-PHASE)*PI/180.0)));
 
                             delta_lam = atmos.lambda[i]*v_los/CLIGHT;
@@ -640,6 +639,7 @@ int RT_Emit_3D(double PHASE)
                 }
             }
         }
+
         // Calculate the intensity of emergent rays at each latitude and longitude
         for(l=0; l<NLAT; l++){
             for(m=0; m<NLON; m++){
@@ -660,13 +660,12 @@ int RT_Emit_3D(double PHASE)
                     for(j=0; j<NTAU; j++)
                     {   
                         intensity[l][m] += Planck(temperature_3d[l][m][j], atmos.lambda[i]) * exp(-tau_em[l][m][j]) * dtau_em[l][m][j];
-                        //printf("%.8e, \n", intensity[l][m]);
                     }
                 
                }
             }
         }
-        
+
         for(l=0; l<NLAT; l++)
         {
             for(m=0; m<NLON; m++)
@@ -679,9 +678,25 @@ int RT_Emit_3D(double PHASE)
                     {
                         kmin += 1;
                     }
+
+
+                    // Find the geometry of the system and convert to radians
+                    incident_lon = (atmos.lon[m] + PHASE + INPUT_PHASE) * (PI / 180.0);
+                    incident_lat = (atmos.lat[l] * PI / 180.0) + INPUT_INCLINATION;
+                    
+                    if (incident_lon>=7.8539 && incident_lon<=10.995 && incident_lat>=-1.570796 && incident_lat<=1.570796)
+                    {
+                        incident_frac = fabs(cos(incident_lat) * cos(incident_lon));
+                    }
+                    else
+                    {
+                        incident_frac = 0.0;
+                    }
+
                     // Get the intensity at the top of the atmosphere
-                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.00, 0.0, atmos.T_3d[l][m], tau_em[l][m], \
-                    CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI);
+                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.3, 0.0, atmos.T_3d[l][m], tau_em[l][m], \
+                    CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);
+
                 }
             }
         }
@@ -689,7 +704,7 @@ int RT_Emit_3D(double PHASE)
 
         
         /*Calculate the total flux received by us*/
-        FILE *fptr = fopen("/Users/imalsky/Desktop/test.txt", "w"); 
+        FILE *fptr = fopen("/home/imalsky/Desktop/test.txt", "w"); 
 
         flux_pl[i] = 0.0;
         for(l=0; l<NLAT; l++)
@@ -699,7 +714,6 @@ int RT_Emit_3D(double PHASE)
                 if(atmos.lon[m]>=450.0-PHASE && atmos.lon[m]<=630.0-PHASE)
                 {                    
                     fprintf(fptr, "%d, %d, %.8e, %.8e\n", l, m, intensity[l][m], malsky_intensity[l][m]);
-                    //printf("%d, %d, %.8e, %.8e, \n", l, m, intensity[l][m], malsky_intensity[l][m]);
                     flux_pl[i] += malsky_intensity[l][m] * fabs(SQ(cos(lat_rad[l]))*cos(lon_rad[m]-PI-PHASE*PI/180.0)*dlat_rad[l]*dlon_rad[m]);
                     //flux_pl[i] += intensity[l][m] * fabs(SQ(cos(lat_rad[l]))*cos(lon_rad[m]-PI-PHASE*PI/180.0)*dlat_rad[l]*dlon_rad[m]);                
                 }
