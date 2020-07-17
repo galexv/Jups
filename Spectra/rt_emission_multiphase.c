@@ -694,7 +694,7 @@ int RT_Emit_3D(double PHASE)
                     }
 
                     // Get the intensity at the top of the atmosphere
-                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.3, 0.0, atmos.T_3d[l][m], tau_em[l][m], \
+                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.00, 0.00, atmos.T_3d[l][m], tau_em[l][m], \
                     CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);
 
                 }

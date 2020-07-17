@@ -19,8 +19,8 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   double h_constant    = 6.62607015e-34;
 
   // These are boundary conditions are values for the flux stuff
-  double EMIS = 1.;
-  double RSFX = 1.;
+  double EMIS = 0.;
+  double RSFX = 0.;
   double redistribution_param = 1.0;
 
   double SFCS;
@@ -119,35 +119,90 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   //**********************************************
   //* Data Sanitation (Sorry, kinda gross code)  *
   //**********************************************
-  if (TAULS[1] < 1e-8)
+
+  //for (J=0; J<10; J++)
+  //{
+  //  if (TEMPS[9-J] < 10)
+  //  {
+  //    TEMPS[9-J] = TEMPS[10-J] - fabs(TEMPS[10-J] - TEMPS[11-J]);
+  //  }
+  //}
+
+  //for (J=0; J<10; J++)
+  //{
+  //  if (TAULS[9-J] < 1e-10)
+  //  {
+  //    TAULS[9-J] = TAULS[10-J] - fabs(TAULS[10-J] - TAULS[11-J]);
+  //  }
+  //}
+
+
+
+  if (TAULS[5] < 1e-10)
   {
-    TAULS[1] = TAULS[2];
+    TAULS[5] = TAULS[6] - fabs(TAULS[6] - TAULS[7]);
   }
 
-  if (TAULS[0] < 1e-8)
+  if (TAULS[4] < 1e-10)
   {
-    TAULS[0] = TAULS[1];
+    TAULS[4] = TAULS[5] - fabs(TAULS[5] - TAULS[6]);
   }
 
-  if (TAULS[NEW_NLAYER-1] < 1e-8)
+  if (TAULS[3] < 1e-10)
+  {
+    TAULS[3] = TAULS[4] - fabs(TAULS[4] - TAULS[5]);
+  }
+
+  if (TAULS[2] < 1e-10)
+  {
+    TAULS[2] = TAULS[3] - fabs(TAULS[3] - TAULS[4]);
+  }
+
+  if (TAULS[1] < 1e-10)
+  {
+    TAULS[1] = TAULS[2] - fabs(TAULS[3] - TAULS[3]);
+  }
+
+  if (TAULS[0] < 1e-10)
+  {
+    TAULS[0] = TAULS[1] - fabs(TAULS[1] - TAULS[2]);
+  }
+
+  if (TAULS[NEW_NLAYER-1] < 1e-10)
   {
     TAULS[NEW_NLAYER-1] = TAULS[NEW_NLAYER-2] + abs(TAULS[NEW_NLAYER-2] - TAULS[NEW_NLAYER-3]);
   }
 
+  if (TEMPS[5] < 1.0)
+  {
+    TEMPS[5] = TEMPS[6] - fabs(TEMPS[6] - TEMPS[7]);
+  }
+
+  if (TEMPS[4] < 1.0)
+  {
+    TEMPS[4] = TEMPS[5] - fabs(TEMPS[5] - TEMPS[6]);
+  }
+
+  if (TEMPS[3] < 1.0)
+  {
+    TEMPS[3] = TEMPS[4] - fabs(TEMPS[4] - TEMPS[4]);
+  }
+
   if (TEMPS[2] < 1.0)
   {
-    TEMPS[2] = TEMPS[3] - (TEMPS[4] - TEMPS[3]);
+    TEMPS[2] = TEMPS[3] - fabs(TEMPS[3] - TEMPS[4]);
   }
 
   if (TEMPS[1] < 1.0)
   {
-    TEMPS[1] = TEMPS[2] - (TEMPS[3] - TEMPS[2]);
+    TEMPS[1] = TEMPS[2] - fabs(TEMPS[2] - TEMPS[3]);
   }
 
   if (TEMPS[0] < 1.0)
   {
-    TEMPS[0] = TEMPS[1] - (TEMPS[2] - TEMPS[1]);
+    TEMPS[0] = TEMPS[1] - fabs(TEMPS[1] - TEMPS[2]);
   }
+  
   
   // Calculate the intensity at the top of the atmosphere
   temp_val_1 = (2.0 * h_constant * (NU * NU * NU)) / (CLIGHT * CLIGHT);
@@ -170,11 +225,18 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   	//redistribution param is unused
     DIRECT = incident_frac * PI * STELLAR_BB * pow(R_STAR / ORB_SEP, 2.0);
     SFCS = RSFX * DIRECT * mu_0 * exp(-(TAUCS[NEW_NLAYER-1] + TAULS[NEW_NLAYER-1]) / mu_0);
+
+    DIRECT=0;
+    SFCS=0;
   }
   else
   {
     SFCS = EMIS * PI * BB_BOTTOM_OF_ATM;
     DIRECT = 0.0;
+
+    SFCS = 0.0;
+    DIRECT = 0.0;
+
   }
 
   // HERE WE FIND LAYER PROPERTIES FOLLOWING GENERAL SCHEME
@@ -234,7 +296,9 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
     temp_val_1 = (2.0 * h_constant * (NU * NU * NU)) / (CLIGHT * CLIGHT);
     temp_val_2 = exp(h_constant * NU / (bolz_constant * TEMPS[J])) - 1.0;
 
-    B_SPECTRAL_DENSITY_VAL = temp_val_1 * (1.0 / temp_val_2);
+    //B_SPECTRAL_DENSITY_VAL = temp_val_1 * (1.0 / temp_val_2);
+    B_SPECTRAL_DENSITY_VAL = temp_val_1 * (1.0 / temp_val_2) * 1e15; //Magic 1e15 (Dont delete)
+
 
     B0[J] = B_SPECTRAL_DENSITY_VAL;
     B1[J] = (B0[J] - B0[KINDEX]) / TAULS[J];
@@ -309,15 +373,11 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
 
     TMI[NEW_NLAYER-J] = (1.0 / mu_1) * (Y[2*J-2]*(e1[J-1] + e3[J-1]) + Y[2*J-1] * (e2[J-1]+e4[J-1]) \
              + CPB[J-1] + CMB[J-1]) +  (DIRECT / mu_0);
-
-    TMI[NEW_NLAYER-J] = TMI[NEW_NLAYER-J] / (4.0 * PI);
-
   }
 
   //********************************************
   //*    Source Function Technique Solution    *
   //********************************************
-
   for(J=1; J<NEW_NLAYER+1; J++)
   {
     SOURCE_Y1[J-1] = Y[2*J-2];
@@ -370,52 +430,24 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
                       ALPHA_2[J+1] * (1.0 - ((TAULS[J+1] + 1.0) * (exp(-TAULS[J+1]))));
   }
   
-  
-  /*
-  for(M=1; M<2; M++)
-  {
-    mu = 1.0 / M;
-    INTENSITY_DOWN[0] = BB_TOP_OF_ATM * exp(-TAULS[0]/mu) + \
-                        SOURCE_J[0]/(LAMBDAS[0]*mu + 1.0) * (1.0 - exp(-TAULS[0]*LAMBDAS[0]+1.0/mu)) + \
-                        SOURCE_K[0]/(LAMBDAS[0]*mu - 1.0) * (exp(-TAULS[0]/mu) - exp(-TAULS[0]*LAMBDAS[0])) + \
-                        SIGMA_1[0] * (1.0 - exp(-TAULS[0]/mu)) + \
-                        SIGMA_2[0] * (mu*exp(-TAULS[0]/mu) + TAULS[0] - mu);
+  //printf("\n\n\n\n\n\n\n");
+  //printf("Two Stream Solution\n");
+  //for(J=1; J<NEW_NLAYER; J++)
+  //{
+  //  printf("%.8e %.8e %.8e %.8e\n", (TMI[NEW_NLAYER - J - 1] / (1e15 * 4.0 * PI)), (INTENSITY_UP[J] / (1e15 * 2.0 * PI)), TAULS[J], TEMPS[J]);
+  //}
 
-    INTENSITY_UP[NEW_NLAYER-1] = 2.0 * BB_BOTTOM_OF_ATM * EMIS * PI;
 
-    // Do the downward intensity first
-    for(J=1; J<NEW_NLAYER; J++)
-    {
-      INTENSITY_DOWN[J] = INTENSITY_DOWN[J-1] * exp(-TAULS[J]/mu) + \
-                      SOURCE_J[J]/(LAMBDAS[J]*mu + 1.0) * (1.0 - exp(-TAULS[J]*LAMBDAS[J]+1.0/mu)) + \
-                      SOURCE_K[J]/(LAMBDAS[J]*mu - 1.0) * (exp(-TAULS[J]/mu) - exp(-TAULS[J]*LAMBDAS[J])) + \
-                      SIGMA_1[J] * (1.0 - exp(-TAULS[J]/mu)) + \
-                      SIGMA_2[J] * (mu*exp(-TAULS[J]/mu) + TAULS[J] - mu);
-    }
-
-    // Calculate the upward intensity next
-    for(Z=1; Z<NEW_NLAYER; Z++)
-    {
-      J = NEW_NLAYER - Z - 1;
-      INTENSITY_UP[J] = INTENSITY_UP[J+1] * exp(-TAULS[J+1]/mu) + \
-                        SOURCE_G[J+1]/(LAMBDAS[J+1]*mu-1.0)*(exp(-TAULS[J+1]/mu)-exp(-TAULS[J+1]*LAMBDAS[J+1])) + \
-                        SOURCE_H[J+1]/(LAMBDAS[J+1]*mu+1.0)*(1.0 - exp(-TAULS[J+1] * (LAMBDAS[J+1] + 1.0/mu))) + \
-                        ALPHA_1[J+1] * (1.0 - exp(-TAULS[J+1]/mu)) + \
-                        ALPHA_2[J+1] * (mu - ((TAULS[J+1] + mu) * (exp(-TAULS[J+1]/mu))));
-    }
-  }
-  */
-
-  TWO_STREAM_INTENSITY = TMI[0];
+  TWO_STREAM_INTENSITY = TMI[NEW_NLAYER-1] / (4.0 * PI);
   SOURCE_INTENSITY     = INTENSITY_UP[0] / (2.0 * PI);
-
+  
   // Define the energy from other sources (eq 37 and 38, Toon)
   if (NU > 430.0e12)
   {
-    return TWO_STREAM_INTENSITY;
+    
   }
   else
   {
-    return SOURCE_INTENSITY;
+    return SOURCE_INTENSITY / 1e15;
   } 
 }

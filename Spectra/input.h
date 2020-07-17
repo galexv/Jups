@@ -10,8 +10,8 @@ Defines input values and files for 3-D emission spectra
 /* I/O SETTINGS. */
 
 /* File names */
-#define OUTPUT_PREFIX "OUT/Spec_0_low_grav_clear_phase_0.0_inc_0.0"      /* output name */
-#define T_P_3D_FILE "DATA/Final_low_grav_clear_phase_0.0_inc_0.0.txt"         /* input file */
+#define OUTPUT_PREFIX "OUT/Spec_0_low_grav_clear_phase_30_inc_0.5"      /* output name */
+#define T_P_3D_FILE "DATA/Final_low_grav_clear_phase_30_inc_0.5.txt"         /* input file */
 
 /* Output settings */
 #define N_PHASE 1                          /* Number of phases [96 max; lon grid in increments of 3.75] */
@@ -28,8 +28,8 @@ Defines input values and files for 3-D emission spectra
 #define NLAMBDA 5000                       /* Number of wavelength points in grid [4616/2598]   */
 
 /* Planet parameters */
-#define INPUT_INCLINATION 0.0        /* Planet inclination in radians            */
-#define INPUT_PHASE 0.0                    /* Planet inclination in degrees           */
+#define INPUT_INCLINATION 0.5        /* Planet inclination in radians            */
+#define INPUT_PHASE 30                    /* Planet inclination in degrees           */
 #define G 12.9324                          /* Planet surface gravity                 */
 #define R_PLANET 1.287e+08                 /* Planet radius at base of atmosphere      */
 

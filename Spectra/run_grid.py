@@ -83,7 +83,7 @@ def run_all_grid(planet_name, phases, inclinations):
                     lon_prime = 360.0 + lon_prime
                 elif lon_prime >= 360.0:
                     lon_prime = lon_prime - 360.0
-
+                 
                 df.lat = lat_prime
                 df.lon = lon_prime
                 df.u = u_prime
@@ -92,6 +92,7 @@ def run_all_grid(planet_name, phases, inclinations):
 
             df = phase_rotation(df, phase)
             df = df.apply(wind_rot, axis=1)
+
 
             running_df = pd.DataFrame(columns=['lon', 'lat', 'temp', 'pres', 'alt', 'u', 'v'])
             levels = np.linspace(1, 60, 60)
