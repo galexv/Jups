@@ -9,8 +9,9 @@ import numpy as np
 import run_grid
 
 
-phases = [30]
-inclinations = [0.5]
+phases = [45.0]
+inclinations = [0.3]
+sytem_obliquity = 0
 
 planet_name = 'low_grav_clear'
 
@@ -26,8 +27,10 @@ def add_columns(phases, inclinations):
     inclination_strs = []
     phase_strs = []
 
-    columns_to_add = ['c11', 'c12', 'c13', 'c14', 'c15', 'c16', 'c17', 'c18',
-                  'c19', 'c110', 'c111', 'c112', 'c113']
+    columns_to_add = ['aero_sw_tau_1', 'sw_asym_1', 'sw_pi0_1',
+                      'aero_sw_tau_2', 'sw_asym_2', 'sw_pi0_2',
+                      'aero_sw_tau_3', 'sw_asym_3', 'sw_pi0_3',
+                      'aero_sw_tau_4', 'sw_asym_4', 'sw_pi0_4']
 
     for phase in phases:
         for inc in inclinations:
@@ -36,7 +39,7 @@ def add_columns(phases, inclinations):
             data_file = 'DATA/init_' + planet_name + '_phase_{}_inc_{}.txt'.format(phase, inc)
 
             # Read the data file
-            df = pd.read_csv(data_file, delim_whitespace=True, names=('lat', 'lon', 'level', 'alt', 'pres', 'temp', 'u', 'v'))
+            df = pd.read_csv(data_file, delim_whitespace=True, names=('lat', 'lon', 'level', 'alt', 'pres', 'temp', 'u', 'v', 'w', 'incident_frac'))
             df = df[(df['lon'] != 360)]
 
             # Add the 0s
@@ -60,7 +63,7 @@ def add_columns(phases, inclinations):
             inclination_strs.append(inc)
             phase_strs.append(phase)
             np.savetxt(final_path, numpy_df,
-            fmt='%-5E\t%-5E\t%i\t%-5E\t%-5E\t%-5E\t%-13E\t%-13E\t%-13E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E\t%-5E')
+            fmt='%-10E  %-10E  %i  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E  %-10E \t')
     
     return input_paths, inclination_strs, phase_strs
 
@@ -115,7 +118,7 @@ def run_exo(input_paths, inclination_strs, phase_strs, doppler_val):
         os.system('./rt_emission_aerosols.exe')
 
 
-#run_grid.run_all_grid(planet_name, phases, inclinations)
+#run_grid.run_all_grid(planet_name, phases, inclinations, sytem_obliquity)
 input_paths, inclination_strs, phase_strs = add_columns(phases, inclinations)
 
 # 0 is off

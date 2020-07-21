@@ -120,52 +120,20 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   //* Data Sanitation (Sorry, kinda gross code)  *
   //**********************************************
 
-  //for (J=0; J<10; J++)
-  //{
-  //  if (TEMPS[9-J] < 10)
-  //  {
-  //    TEMPS[9-J] = TEMPS[10-J] - fabs(TEMPS[10-J] - TEMPS[11-J]);
-  //  }
-  //}
-
-  //for (J=0; J<10; J++)
-  //{
-  //  if (TAULS[9-J] < 1e-10)
-  //  {
-  //    TAULS[9-J] = TAULS[10-J] - fabs(TAULS[10-J] - TAULS[11-J]);
-  //  }
-  //}
-
-
-
-  if (TAULS[5] < 1e-10)
+  for (J=0; J<10; J++)
   {
-    TAULS[5] = TAULS[6] - fabs(TAULS[6] - TAULS[7]);
+    if (TAULS[9-J] < 1e-10)
+    {
+      TAULS[9-J] = TAULS[10-J] - fabs(TAULS[10-J] - TAULS[11-J]);
+    }
   }
 
-  if (TAULS[4] < 1e-10)
+  for (J=0; J<10; J++)
   {
-    TAULS[4] = TAULS[5] - fabs(TAULS[5] - TAULS[6]);
-  }
-
-  if (TAULS[3] < 1e-10)
-  {
-    TAULS[3] = TAULS[4] - fabs(TAULS[4] - TAULS[5]);
-  }
-
-  if (TAULS[2] < 1e-10)
-  {
-    TAULS[2] = TAULS[3] - fabs(TAULS[3] - TAULS[4]);
-  }
-
-  if (TAULS[1] < 1e-10)
-  {
-    TAULS[1] = TAULS[2] - fabs(TAULS[3] - TAULS[3]);
-  }
-
-  if (TAULS[0] < 1e-10)
-  {
-    TAULS[0] = TAULS[1] - fabs(TAULS[1] - TAULS[2]);
+    if (TEMPS[9-J] < 10)
+    {
+      TEMPS[9-J] = TEMPS[10-J] - fabs(TEMPS[10-J] - TEMPS[11-J]);
+    }
   }
 
   if (TAULS[NEW_NLAYER-1] < 1e-10)
@@ -173,36 +141,7 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
     TAULS[NEW_NLAYER-1] = TAULS[NEW_NLAYER-2] + abs(TAULS[NEW_NLAYER-2] - TAULS[NEW_NLAYER-3]);
   }
 
-  if (TEMPS[5] < 1.0)
-  {
-    TEMPS[5] = TEMPS[6] - fabs(TEMPS[6] - TEMPS[7]);
-  }
 
-  if (TEMPS[4] < 1.0)
-  {
-    TEMPS[4] = TEMPS[5] - fabs(TEMPS[5] - TEMPS[6]);
-  }
-
-  if (TEMPS[3] < 1.0)
-  {
-    TEMPS[3] = TEMPS[4] - fabs(TEMPS[4] - TEMPS[4]);
-  }
-
-  if (TEMPS[2] < 1.0)
-  {
-    TEMPS[2] = TEMPS[3] - fabs(TEMPS[3] - TEMPS[4]);
-  }
-
-  if (TEMPS[1] < 1.0)
-  {
-    TEMPS[1] = TEMPS[2] - fabs(TEMPS[2] - TEMPS[3]);
-  }
-
-  if (TEMPS[0] < 1.0)
-  {
-    TEMPS[0] = TEMPS[1] - fabs(TEMPS[1] - TEMPS[2]);
-  }
-  
   
   // Calculate the intensity at the top of the atmosphere
   temp_val_1 = (2.0 * h_constant * (NU * NU * NU)) / (CLIGHT * CLIGHT);
@@ -444,10 +383,11 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   // Define the energy from other sources (eq 37 and 38, Toon)
   if (NU > 430.0e12)
   {
-    
+    return TWO_STREAM_INTENSITY / 1e15;
   }
   else
   {
-    return SOURCE_INTENSITY / 1e15;
+  	return TWO_STREAM_INTENSITY / 1e15;
+    //return SOURCE_INTENSITY / 1e15;
   } 
 }

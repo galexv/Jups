@@ -3,13 +3,12 @@ import numpy as np
 from scipy.interpolate import Rbf
 
 
-def run_all_grid(planet_name, phases, inclinations):
+def run_all_grid(planet_name, phases,inclinations, sytem_obliquity):
     print ('Running the regridding')
     # This regrids all the stuff
 
     def df_to_txt(file, df):
-        #np.savetxt(file, df.values, fmt='%.5E\t%.5E\t%i\t%.5E\t%.5E\t%.5E\t%.5E\t%.5E\t')
-        np.savetxt(file, df.values, fmt='%-5E  %-5E  %-5E  %-5E  %-5E  %-5E  %-13E  %-13E\t')
+        np.savetxt(file, df.values, fmt='%-8E  %-8E  %i  %-8E  %-8E  %-8E  %-8E  %-8E  %-8E %-8E\t')
 
     planet_file = '../Planets/' + planet_name + '.txt'
 
@@ -23,6 +22,17 @@ def run_all_grid(planet_name, phases, inclinations):
             # Get rid of any place where the longitude is equal to 360
             # Not needed by Eliza Code
             df = df[(df['lon'] != 360)].reset_index()
+
+            def get_incident_flux(df, sytem_obliquity):
+                """Add a new column corresponding to the fraction of intensity"""
+                
+                # Find the incident fraction depending on latitude and longitude
+                df['incident_frac'] = np.sin(df.lat * np.pi / 180.0) * np.sin(sytem_obliquity) + \
+                                      np.cos(df.lat * np.pi / 180.0) * np.cos(sytem_obliquity) * np.cos(df.lon * np.pi / 180.0)
+
+                # Anywhere not on the circle illuminated set to 0
+                #df.incident_frac = df.incident_frac.mask(df.incident_frac < 0.0, 0.0)
+                return df
 
             def phase_rotation(df, phase):
                 """ Rotate the planet a certain phase and rollover longitude"""
@@ -88,13 +98,14 @@ def run_all_grid(planet_name, phases, inclinations):
                 df.lon = lon_prime
                 df.u = u_prime
                 df.v = v_prime
+                df['w'] = 0.0
                 return df
 
+            df = get_incident_flux(df, sytem_obliquity)
             df = phase_rotation(df, phase)
             df = df.apply(wind_rot, axis=1)
 
-
-            running_df = pd.DataFrame(columns=['lon', 'lat', 'temp', 'pres', 'alt', 'u', 'v'])
+            running_df = pd.DataFrame(columns=['lon', 'lat', 'temp', 'pres', 'alt', 'u', 'v', 'w', 'incident_frac'])
             levels = np.linspace(1, 60, 60)
             for level in levels:
                 sub_df = df[(df['level'] == level)].reset_index(drop=True)
@@ -105,7 +116,7 @@ def run_all_grid(planet_name, phases, inclinations):
 
                 # Create a dataframe that has all non zeros
                 # Used to find where the 0s should be
-                sub_df = sub_df[(sub_df['temp'] > 0)]
+                sub_df = sub_df[(sub_df['temp'] > 100)]
 
                 x = np.array(list(sub_df.lon))
                 y = np.array(list(sub_df.lat))
@@ -122,15 +133,14 @@ def run_all_grid(planet_name, phases, inclinations):
 
                 rbf = Rbf(x, y, np.array(list(sub_df.temp)), epsilon=2, function='linear', smooth=0.1)
                 z1 = rbf(xx, yy)
-                z1[z1 < 10] = 0
+                z1[z1 < 100] = 0
 
-                ################################
                 rbf_test = Rbf(x_test, y_test, np.array(list(full_df.temp)), function='linear', smooth=1)
                 z_test = rbf_test(xx, yy)
                 df_temp1_test = pd.DataFrame(data=z_test, index=rows, columns=columns)
                 temp_test = df_temp1_test.stack().reset_index().rename(columns={"level_0": "lat", "level_1": "lon", 0: "temp"})
-                #################################
 
+                # Set the interpolation functions
                 rbf = Rbf(x, y, np.array(list(sub_df.pres)), epsilon=2, function='linear', smooth=0.1)
                 z2 = rbf(xx, yy)
 
@@ -144,6 +154,11 @@ def run_all_grid(planet_name, phases, inclinations):
                 rbf = Rbf(x, y, np.array(list(sub_df.v)), epsilon=2, function='linear', smooth=0.1)
                 z5 = rbf(xx, yy)
 
+                rbf = Rbf(x, y, np.array(list(sub_df.incident_frac)), epsilon=2, function='linear', smooth=0.1)
+                z6 = rbf(xx, yy)
+
+
+                # Create more dataframe stuff
                 df_temp1 = pd.DataFrame(data=z1, index=rows, columns=columns)
                 temp = df_temp1.stack().reset_index().rename(columns={"level_0": "lat", "level_1": "lon", 0: "temp"})
 
@@ -159,33 +174,37 @@ def run_all_grid(planet_name, phases, inclinations):
                 df_temp5 = pd.DataFrame(data=z5, index=rows, columns=columns)
                 v = df_temp5.stack().reset_index().rename(columns={"level_0": "lat", "level_1": "lon", 0: "v"})
 
+                df_temp6 = pd.DataFrame(data=z6, index=rows, columns=columns)
+                incident_frac = df_temp6.stack().reset_index().rename(columns={"level_0": "lat", "level_1": "lon", 0: "incident_frac"})
+
+
+                # Merge dataframes
                 big_df = pd.merge(temp, pres, how='left')
                 big_df = pd.merge(big_df, alt, how='left')
                 big_df = pd.merge(big_df, u, how='left')
                 big_df = pd.merge(big_df, v, how='left')
+                big_df = pd.merge(big_df, incident_frac, how='left')
 
-                # Now I need to set any values in the right dataframe
-                # To be 0 wherever the other dataframe predicts it
+                # More Code
                 big_df['level'] = level
 
-                # For setting the temperature
+                # Filter out stuff where Exotransmit wants 0s
                 big_df['temp'][temp_test['temp'] < 100] = 0
-                #big_df['temp'][temp_test['temp'] > 100] = 2000
+                #big_df['pres'][temp_test['temp'] < 100] = 0
+                #big_df['u'][temp_test['temp'] < 100] = 0
+                #big_df['v'][temp_test['temp'] < 100] = 0
 
-
-
-                big_df['pres'][temp_test['temp'] < 100] = 0
-                big_df['u'][temp_test['temp'] < 100] = 0
-                big_df['v'][temp_test['temp'] < 100] = 0
+                # Merge the dataframes
                 frames = [running_df, big_df]
                 running_df = pd.concat(frames, sort=True)
 
             running_df['lat'] = running_df['lat'].astype(float)
             running_df['lon'] = running_df['lon'].astype(float)
             running_df['level'] = running_df['level'].astype(float)
+            running_df['w'] = 0
 
             # Sort the data tables
-            running_df = running_df[['lat', 'lon', 'level', 'alt', 'pres', 'temp', 'u', 'v']]
+            running_df = running_df[['lat', 'lon', 'level', 'alt', 'pres', 'temp', 'u', 'v', 'w', 'incident_frac']]
             running_df = running_df.sort_values(by=['lat', 'lon'], axis=0, ascending=[True, True])
 
             # Put this in the spectra folder

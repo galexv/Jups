@@ -640,6 +640,7 @@ int RT_Emit_3D(double PHASE)
             }
         }
 
+
         // Calculate the intensity of emergent rays at each latitude and longitude
         for(l=0; l<NLAT; l++){
             for(m=0; m<NLON; m++){
@@ -678,19 +679,14 @@ int RT_Emit_3D(double PHASE)
                     {
                         kmin += 1;
                     }
-
-
-                    // Find the geometry of the system and convert to radians
-                    incident_lon = (atmos.lon[m] + PHASE + INPUT_PHASE) * (PI / 180.0);
-                    incident_lat = (atmos.lat[l] * PI / 180.0) + INPUT_INCLINATION;
                     
-                    if (incident_lon>=7.8539 && incident_lon<=10.995 && incident_lat>=-1.570796 && incident_lat<=1.570796)
+                    // Grab the incident sunlight fraction
+                    // This should be passed from the input file
+                    // If it's less than 0 that means that it's the wrong hemisphere
+                    incident_frac = 0;
+                    if (atmos.incident_frac[l][m][NTAU-1] > 0)
                     {
-                        incident_frac = fabs(cos(incident_lat) * cos(incident_lon));
-                    }
-                    else
-                    {
-                        incident_frac = 0.0;
+                        incident_frac = atmos.incident_frac[l][m][NTAU-1];
                     }
 
                     // Get the intensity at the top of the atmosphere
@@ -704,8 +700,7 @@ int RT_Emit_3D(double PHASE)
 
         
         /*Calculate the total flux received by us*/
-        FILE *fptr = fopen("/home/imalsky/Desktop/test.txt", "w"); 
-
+        FILE *fptr = fopen("/home/imalsky/Desktop/intensity.txt", "w"); 
         flux_pl[i] = 0.0;
         for(l=0; l<NLAT; l++)
         {
@@ -715,7 +710,6 @@ int RT_Emit_3D(double PHASE)
                 {                    
                     fprintf(fptr, "%d, %d, %.8e, %.8e\n", l, m, intensity[l][m], malsky_intensity[l][m]);
                     flux_pl[i] += malsky_intensity[l][m] * fabs(SQ(cos(lat_rad[l]))*cos(lon_rad[m]-PI-PHASE*PI/180.0)*dlat_rad[l]*dlon_rad[m]);
-                    //flux_pl[i] += intensity[l][m] * fabs(SQ(cos(lat_rad[l]))*cos(lon_rad[m]-PI-PHASE*PI/180.0)*dlat_rad[l]*dlon_rad[m]);                
                 }
             }
         }
