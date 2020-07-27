@@ -433,7 +433,7 @@ int RT_Emit_3D(double PHASE)
     // THIS IS TEMPORARY
     //FIIXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx
     //for(i=0; i<NLAMBDA; i++)
-    for(i=0; i<2; i++)
+    for(i=30; i<31; i++)
     {
         for(l=0; l<NLAT; l++)
         {
@@ -528,11 +528,6 @@ int RT_Emit_3D(double PHASE)
                                 // MALSKY ADDITION
                                 kappa_nu = fabs(kappa_nu);
                             }
-
-                            //if (l == 45 && m == 85)
-                            //{
-                            //    printf("Huh %d %.8e %.8e %.8e %.8e %.8e\n", j, kappa_nu, temperature, atmos.lambda[i]+delta_lam, atmos.lambda[NLAMBDA-1],atmos.lambda[0]);
-                            //}
                         }
 
                         /* Wind Only */
@@ -696,20 +691,17 @@ int RT_Emit_3D(double PHASE)
                     }
                     
                     // Grab the incident sunlight fraction
-                    // This should be passed from the input file
-                    // If it's less than 0 that means that it's the wrong hemisphere
                     incident_frac = 0;
                     if (atmos.incident_frac[l][m][NTAU-1] > 0)
                     {
                         incident_frac = atmos.incident_frac[l][m][NTAU-1];
                     }
 
+                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.00, 0.00, atmos.T_3d[l][m], tau_em[l][m], \
+                    CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);
 
-                    //malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.99, 0.99, atmos.T_3d[l][m], tau_em[l][m], \
-                    //CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);
-
-                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.99, 0.99, atmos.T_3d[l][m], tau_em[l][m], \
-                    5.0e14, CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);
+                    //malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.8, 0.00, atmos.T_3d[l][m], tau_em[l][m], \
+                    //1.0e14, CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, 1.0);
 
                 }
             }

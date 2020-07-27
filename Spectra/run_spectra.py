@@ -9,8 +9,8 @@ import numpy as np
 import run_grid
 
 
-phases = [0.0]
-inclinations = [0.0]
+phases = [90.0]
+inclinations = [0.3]
 sytem_obliquity = 0
 
 planet_name = 'low_grav_clear'

@@ -24,7 +24,14 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   double redistribution_param = 1.0;
 
   double SFCS;
-  double DIRECT;
+  double DIRECT_HEMISPHERIC;
+
+  double SFCS_QUADRATURE;
+  double DIRECT_QUADRATURE[NLAYER - kmin];
+  double FLUX_SURFACE_QUADRATURE;
+  double FLUX_SURFACE_HEMISPHERIC;
+
+
   double STELLAR_BB;
   double BB_TOP_OF_ATM;
   double BB_BOTTOM_OF_ATM;
@@ -44,6 +51,10 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   // How to generate the matrix from the toon paper
   double y1[NLAYER - kmin];
   double y2[NLAYER - kmin];
+
+  double y3[NLAYER - kmin];
+  double y4[NLAYER - kmin];
+
   double LAMBDAS[NLAYER - kmin];
   double GAMMA[NLAYER - kmin];
   double temp_e_val[NLAYER - kmin];
@@ -118,7 +129,15 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   // Of the layers need to be cut off
   NEW_NLAYER = NLAYER - kmin;
 
-  //printf("\n\n\n");
+
+  // Calculate the flux at the top of the atmosphere from the star
+  temp_val_1 = (2.0 * h_constant * (NU * NU * NU)) / (CLIGHT * CLIGHT);
+  temp_val_2 = exp(h_constant * NU / (bolz_constant * STELLAR_TEMP)) - 1.0;
+  STELLAR_BB = temp_val_1 * (1.0 / temp_val_2);
+
+  FLUX_SURFACE_QUADRATURE = incident_frac * PI * STELLAR_BB * pow(R_STAR / ORB_SEP, 2.0);
+  FLUX_SURFACE_HEMISPHERIC = 0;
+
   for (J=0; J<NEW_NLAYER; J++)
   {
     W0[J] = w0_val;
@@ -128,6 +147,9 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
     TAUCS[J] = tau_array[J+kmin];
 
     TAULS[J] =  -1.0 * (tau_array[J+kmin] - tau_array[J+kmin + 1]);
+
+    DIRECT_QUADRATURE[J]  = mu_0 * PI * FLUX_SURFACE_QUADRATURE * exp(-1.0 * (TAUCS[J] + TAULS[J]) / mu_0);
+    DIRECT_HEMISPHERIC = 0.0;
 
     //printf("%.8e %.8e \n", TEMPS[J], TAULS[J]);
   }
@@ -157,6 +179,7 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
     TAULS[NEW_NLAYER-1] = TAULS[NEW_NLAYER-2] + abs(TAULS[NEW_NLAYER-2] - TAULS[NEW_NLAYER-3]);
   }
 
+
   // Calculate the intensity at the top of the atmosphere
   temp_val_1 = (2.0 * h_constant * (NU * NU * NU)) / (CLIGHT * CLIGHT);
   temp_val_2 = exp(h_constant * NU / (bolz_constant * TEMPS[NEW_NLAYER-1])) - 1.0;
@@ -166,14 +189,6 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   temp_val_1 = (2.0 * h_constant * (NU * NU * NU)) / (CLIGHT * CLIGHT);
   temp_val_2 = exp(h_constant * NU / (bolz_constant * TEMPS[NEW_NLAYER-1])) - 1.0;
   BB_BOTTOM_OF_ATM = temp_val_1 * (1.0 / temp_val_2);
-
-  // Calculate the flux at the top of the atmosphere from the star
-  temp_val_1 = (2.0 * h_constant * (NU * NU * NU)) / (CLIGHT * CLIGHT);
-  temp_val_2 = exp(h_constant * NU / (bolz_constant * STELLAR_TEMP)) - 1.0;
-  STELLAR_BB = temp_val_1 * (1.0 / temp_val_2);
-
-
-
 
 
 
@@ -199,13 +214,6 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   RSFX = 1.0;
 
   SFCS = EMIS * PI * BB_BOTTOM_OF_ATM;
-  //SFCS = RSFX * DIRECT * mu_0 * exp(-(TAUCS[NEW_NLAYER-1] + TAULS[NEW_NLAYER-1]) / mu_0);
-
-  DIRECT = 0.0;
-  //DIRECT = incident_frac * PI * STELLAR_BB * pow(R_STAR / ORB_SEP, 2.0);
-  
-
-
 
   // HERE WE FIND LAYER PROPERTIES FOLLOWING GENERAL SCHEME
   // OF MEADOR AND WEAVOR. THEN WE SET UP LAYER PROPERTIES
@@ -345,10 +353,10 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   for(J=1; J<NEW_NLAYER+1; J++)
   {
     FNET[NEW_NLAYER-J] = Y[2*J-2] * (e1[J-1]-e3[J-1]) + Y[2*J-2] \
-                 * (e2[J-1]-e4[J-1]) + CPB[J-1] - CMB[J-1] - DIRECT;
+                 * (e2[J-1]-e4[J-1]) + CPB[J-1] - CMB[J-1] - DIRECT_HEMISPHERIC;
 
     TMI[NEW_NLAYER-J] = (1.0 / mu_1) * (Y[2*J-2]*(e1[J-1] + e3[J-1]) + Y[2*J-1] * (e2[J-1]+e4[J-1]) \
-             + CPB[J-1] + CMB[J-1]) +  (DIRECT / mu_0);
+             + CPB[J-1] + CMB[J-1]) +  (DIRECT_HEMISPHERIC / mu_0);
 
     HEMISPHERIC_TWO_STREAM[NEW_NLAYER-J] = TMI[NEW_NLAYER-J];
   }
@@ -442,20 +450,18 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   EMIS = 1.0;
   RSFX = 1.0;
 
-  //SFCS = EMIS * PI * BB_BOTTOM_OF_ATM;
-  SFCS = RSFX * DIRECT * mu_0 * exp(-(TAUCS[NEW_NLAYER-1] + TAULS[NEW_NLAYER-1]) / mu_0);
+  SFCS_QUADRATURE = RSFX * mu_0 * exp(-(TAUCS[NEW_NLAYER-1]) / mu_0) * PI * FLUX_SURFACE_QUADRATURE;
 
-  //DIRECT = 0.0;
-  DIRECT = incident_frac * PI * STELLAR_BB * pow(R_STAR / ORB_SEP, 2.0);
-  
   // HERE WE FIND LAYER PROPERTIES FOLLOWING GENERAL SCHEME
   // OF MEADOR AND WEAVOR. THEN WE SET UP LAYER PROPERTIES
   // NEEDED FOR MATRIX.
 
   for(J=0; J<NEW_NLAYER; J++)
   {
-    y1[J]    =  0.866 * (2.0 - (W0[J] * (1.0 + G0[J])));
-    y2[J]    =  0.866 * (W0[J] * (1.0 - G0[J]));
+    y1[J] = 0.866 * (2.0 - (W0[J] * (1.0 + G0[J])));
+    y2[J] = 0.866 * (W0[J] * (1.0 - G0[J]));
+    y3[J] = 0.5   * (1.0 - G0[J]);
+    y4[J] = 1.0   - (y3[J]);
 
     LAMBDAS[J]    =  sqrt(fabs(pow(y1[J], 2.0) - pow(y2[J], 2.0)));
     GAMMA[J]  =  y2[J] / (y1[J] + LAMBDAS[J]);
@@ -494,29 +500,7 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   B[2*NEW_NLAYER-1] = e2[NEW_NLAYER-1] - RSFX * e4[NEW_NLAYER-1];
   D[2*NEW_NLAYER-1] = 0.0;
 
-  // This is the part of the code that solves for the blackbody stuff
-  for(J=0; J<NEW_NLAYER; J++)
-  {
-    if(0 >= J-1)
-    {
-      KINDEX = 0;
-    }
-    else
-    {
-      KINDEX = J-1;
-    }
-    
-    temp_val_1 = (2.0 * h_constant * (NU * NU * NU)) / (CLIGHT * CLIGHT);
-    temp_val_2 = exp(h_constant * NU / (bolz_constant * TEMPS[J])) - 1.0;
-    B_SPECTRAL_DENSITY_VAL = temp_val_1 * (1.0 / temp_val_2) * 1e15; //Magic 1e15 (Dont delete)
 
-
-    B0[J] = B_SPECTRAL_DENSITY_VAL;
-    B1[J] = (B0[J] - B0[KINDEX]) / TAULS[J];
-  }
-
-  // The very top of the atmosphere is isothermal
-  B1[0] = 0;
 
   // This solves for the C values in the toon code
   for(J=0; J<NEW_NLAYER; J++)
@@ -532,11 +516,30 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
 
     temp_gamma_val[J]   = 1.0 / (y1[J] + y2[J]);
 
-    CP[J]  = (B0[KINDEX] + B1[J] * temp_gamma_val[J]) * 2.0 * PI * mu_1;
-    CPB[J] = CP[J] + B1[J] * TAULS[J] * 2.0 * PI * mu_1;
 
-    CM[J]  = (B0[KINDEX] - B1[J] * temp_gamma_val[J]) * 2.0 * PI * mu_1;
-    CMB[J] = CM[J] + B1[J] * TAULS[J] * 2.0 * PI * mu_1;
+
+    CP[J] = W0[J] * PI * FLUX_SURFACE_QUADRATURE * \
+             exp(-(TAUCS[J]) / mu_0) *   \
+             (((y1[J] - 1.0 / mu_0) * y3[J]) + (y4[J] * y2[J])) / \
+             (pow(LAMBDAS[J], 2.0) - (1.0 / pow(mu_0, 2.0)));
+
+
+    CPB[J] = W0[J] * PI * FLUX_SURFACE_QUADRATURE * \
+             exp(-(TAUCS[J] + TAULS[J]) / mu_0) *   \
+             (((y1[J] - 1.0 / mu_0) * y3[J]) + (y4[J] * y2[J])) / \
+             (pow(LAMBDAS[J], 2.0) - (1.0 / pow(mu_0, 2.0)));
+
+
+    CM[J] = W0[J] * PI * FLUX_SURFACE_QUADRATURE * \
+         exp(-(TAUCS[J]) / mu_0) *   \
+         (((y1[J] + 1.0 / mu_0) * y3[J]) + (y4[J] * y2[J])) / \
+         (pow(LAMBDAS[J], 2.0) - (1.0 / pow(mu_0, 2.0)));
+
+
+    CMB[J] = W0[J] * PI * FLUX_SURFACE_QUADRATURE * \
+             exp(-(TAUCS[J] + TAULS[J]) / mu_0) *   \
+             (((y1[J] + 1.0 / mu_0) * y3[J]) + (y4[J] * y2[J])) / \
+             (pow(LAMBDAS[J], 2.0) - (1.0 / pow(mu_0, 2.0)));
   }
 
   J = 0;
@@ -555,7 +558,7 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   // DIFFUSE RADIATION IS INCIDENT AT THE TOP.
 
   E[0] = -CM[0];
-  E[2*NEW_NLAYER-1]  = SFCS + RSFX * CMB[NEW_NLAYER-1] - CPB[NEW_NLAYER-1];
+  E[2*NEW_NLAYER-1]  = SFCS_QUADRATURE + RSFX * CMB[NEW_NLAYER-1] - CPB[NEW_NLAYER-1];
   DS[2*NEW_NLAYER-1] = E[2*NEW_NLAYER-1] / B[2*NEW_NLAYER-1];
   AS[2*NEW_NLAYER-1] = A[2*NEW_NLAYER-1] / B[2*NEW_NLAYER-1];
 
@@ -584,93 +587,26 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   for(J=1; J<NEW_NLAYER+1; J++)
   {
     FNET[NEW_NLAYER-J] = Y[2*J-2] * (e1[J-1]-e3[J-1]) + Y[2*J-2] \
-                 * (e2[J-1]-e4[J-1]) + CPB[J-1] - CMB[J-1] - DIRECT;
+                 * (e2[J-1]-e4[J-1]) + CPB[J-1] - CMB[J-1] - DIRECT_QUADRATURE[J];
 
     TMI[NEW_NLAYER-J] = (1.0 / mu_1) * (Y[2*J-2]*(e1[J-1] + e3[J-1]) + Y[2*J-1] * (e2[J-1]+e4[J-1]) \
-             + CPB[J-1] + CMB[J-1]) +  (DIRECT / mu_0);
+             + CPB[J-1] + CMB[J-1]) +  (DIRECT_QUADRATURE[J] / mu_0);
 
     QUADRATURE_TWO_STREAM[NEW_NLAYER-J] = TMI[NEW_NLAYER-J];
   }
 
 
-  //********************************************
-  //*    Source Function Technique Solution    *
-  //********************************************
-  for(J=1; J<NEW_NLAYER+1; J++)
-  {
-    SOURCE_Y1[J-1] = Y[2*J-2];
-    SOURCE_Y2[J-1] = Y[2*J-1];
-  }
-  
-  for(J=0; J<NEW_NLAYER; J++)
-  {
-    SOURCE_G[J] = (SOURCE_Y1[J] + SOURCE_Y2[J]) * (1.0/mu_1 - LAMBDAS[J]);
-    SOURCE_H[J] = (SOURCE_Y1[J] - SOURCE_Y2[J]) * GAMMA[J] * (1.0/mu_1 + LAMBDAS[J]);
-    SOURCE_J[J] = (SOURCE_Y1[J] + SOURCE_Y2[J]) * GAMMA[J] * (1.0/mu_1 + LAMBDAS[J]);
-    SOURCE_K[J] = (SOURCE_Y1[J] - SOURCE_Y2[J]) * GAMMA[J] * (1.0/mu_1 - LAMBDAS[J]);
-
-    source_temp[J] = (1.0 / (y1[J] + y2[J])) - mu_1;
-    ALPHA_1[J]     = 2.0 * PI * (B0[J] + (B1[J] * source_temp[J]));
-    ALPHA_2[J]     = 2.0 * PI * B1[J];
-
-    SIGMA_1[J] = 2.0 * PI * (B0[J] - (B1[J] * source_temp[J]));
-    SIGMA_2[J] = 2.0 * PI * B1[J];
-  }
-
-  
-  INTENSITY_DOWN[0] = BB_TOP_OF_ATM * exp(-TAULS[0]) + \
-                      SOURCE_J[0]/(LAMBDAS[0] + 1.0) * (1.0 - exp(-TAULS[0]*LAMBDAS[0]+1.0)) + \
-                      SOURCE_K[0]/(LAMBDAS[0] - 1.0) * (exp(-TAULS[0]) - exp(-TAULS[0]*LAMBDAS[0])) + \
-                      SIGMA_1[0] * (1.0 - exp(-TAULS[0])) + \
-                      SIGMA_2[0] * (exp(-TAULS[0]) + TAULS[0] + 1.0);
-
-
-  INTENSITY_UP[NEW_NLAYER-1] = 2.0 * BB_BOTTOM_OF_ATM * EMIS * PI;
-
-  // Do the downward intensity first
-  for(J=1; J<NEW_NLAYER; J++)
-  {
-    INTENSITY_DOWN[J] = INTENSITY_DOWN[J-1] * exp(-TAULS[J]) + \
-                    SOURCE_J[J]/(LAMBDAS[J] + 1.0) * (1.0 - exp(-TAULS[J]*LAMBDAS[J]+1.0)) + \
-                   SOURCE_K[J]/(LAMBDAS[J] - 1.0) * (exp(-TAULS[J]) - exp(-TAULS[J]*LAMBDAS[J])) + \
-                    SIGMA_1[J] * (1.0 - exp(-TAULS[J])) + \
-                    SIGMA_2[J] * (exp(-TAULS[J]) + TAULS[J] - 1.0);
-  }
-
-  // Calculate the upward intensity next
-  for(Z=1; Z<NEW_NLAYER; Z++)
-  {
-    J = NEW_NLAYER - Z - 1;
-    INTENSITY_UP[J] = INTENSITY_UP[J+1] * exp(-TAULS[J+1]) + \
-                      SOURCE_G[J+1]/(LAMBDAS[J+1]-1.0)*(exp(-TAULS[J+1])-exp(-TAULS[J+1]*LAMBDAS[J+1])) + \
-                      SOURCE_H[J+1]/(LAMBDAS[J+1]+1.0) * (1.0 - exp(-TAULS[J+1] * (LAMBDAS[J+1] + 1.0))) + \
-                      ALPHA_1[J+1] * (1.0 - exp(-TAULS[J+1])) + \
-                      ALPHA_2[J+1] * (1.0 - ((TAULS[J+1] + 1.0) * (exp(-TAULS[J+1]))));
-    QUADRATURE_SOURCE_FNC[J] = INTENSITY_UP[J];
-  }
-
-  QUADRATURE_TWO_STREAM_TOP = QUADRATURE_TWO_STREAM[NEW_NLAYER-1] / (1e15 * 4.0 * PI);
-  QUADRATURE_SOURCE_FNC_TOP = QUADRATURE_SOURCE_FNC[0]   / (1e15 * 2.0 * PI);
+  QUADRATURE_TWO_STREAM_TOP = QUADRATURE_TWO_STREAM[NEW_NLAYER-1] / (4.0 * PI);
 
   printf("\n\n\n\n");
   for(J=0; J<NEW_NLAYER; J++)
   {
-    printf("%.8e, %.8e, %.8e, %.8e, \n", HEMISPHERIC_TWO_STREAM[NEW_NLAYER-J-1] / (1e15 * 4.0 * PI),\
+    printf("%.8e, %.8e, %.8e, \n", HEMISPHERIC_TWO_STREAM[NEW_NLAYER-J-1] / (1e15 * 4.0 * PI),\
                                     HEMISPHERIC_SOURCE_FNC[J] / (1e15 * 2.0 * PI), 
-                                    QUADRATURE_TWO_STREAM[NEW_NLAYER-J-1] / (1e15 * 4.0 * PI), \
-                                    QUADRATURE_SOURCE_FNC[J] / (1e15 * 2.0 * PI));
+                                    QUADRATURE_TWO_STREAM[NEW_NLAYER-J-1] / (4.0 * PI));
   }
 
 
 
-  
-  // Define the energy from other sources (eq 37 and 38, Toon)
-  if (NU > 430.0e12)
-  {
-    return HEMISPHERIC_TWO_STREAM_TOP;
-  }
-  else
-  {
-  	return HEMISPHERIC_TWO_STREAM_TOP;
-  } 
+  return HEMISPHERIC_SOURCE_FNC_TOP + QUADRATURE_TWO_STREAM_TOP;
 }
