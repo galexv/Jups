@@ -429,8 +429,11 @@ int RT_Emit_3D(double PHASE)
     }
     printf("solid %f\n", solid);
         
-       
-    for(i=0; i<NLAMBDA; i++)
+
+    // THIS IS TEMPORARY
+    //FIIXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx
+    //for(i=0; i<NLAMBDA; i++)
+    for(i=0; i<2; i++)
     {
         for(l=0; l<NLAT; l++)
         {
@@ -504,7 +507,8 @@ int RT_Emit_3D(double PHASE)
                             delta_lam = atmos.lambda[i]*v_los/CLIGHT;
                             Locate(NLAMBDA, atmos.lambda, atmos.lambda[i]+delta_lam, &ii);
                             
-                            if(temperature < 100.0 || atmos.lambda[i]+delta_lam >= atmos.lambda[NLAMBDA-1] || atmos.lambda[i]+delta_lam <= atmos.lambda[0])
+
+                            if(temperature < 100.0 || atmos.lambda[i]+delta_lam >= atmos.lambda[NLAMBDA-1] || atmos.lambda[i]+delta_lam + 0.0001e-6 <= atmos.lambda[0])
                             {
                                 kappa_nu = 0.0;
                             }
@@ -520,8 +524,15 @@ int RT_Emit_3D(double PHASE)
                                                   opac.kappa[ii+1][h][g+1],
                                                   opac.kappa[ii+1][h+1][g],
                                                   opac.kappa[ii+1][h+1][g+1],
-                                                  temperature, pressure, atmos.lambda[i]+delta_lam);
+                                                  temperature, pressure, atmos.lambda[i]+delta_lam + 0.0001e-6);
+                                // MALSKY ADDITION
+                                kappa_nu = fabs(kappa_nu);
                             }
+
+                            //if (l == 45 && m == 85)
+                            //{
+                            //    printf("Huh %d %.8e %.8e %.8e %.8e %.8e\n", j, kappa_nu, temperature, atmos.lambda[i]+delta_lam, atmos.lambda[NLAMBDA-1],atmos.lambda[0]);
+                            //}
                         }
 
                         /* Wind Only */
@@ -537,7 +548,7 @@ int RT_Emit_3D(double PHASE)
 
                             delta_lam = atmos.lambda[i]*v_los/CLIGHT;
                             Locate(NLAMBDA, atmos.lambda, atmos.lambda[i]+delta_lam, &ii);
-                            
+
                             if(temperature < 100.0 || atmos.lambda[i]+delta_lam >= atmos.lambda[NLAMBDA-1] || atmos.lambda[i]+delta_lam <= atmos.lambda[0])
                             {
                                 kappa_nu = 0.0;
@@ -605,20 +616,24 @@ int RT_Emit_3D(double PHASE)
                                                   opac.kappa[i][h+1][g+1],
                                                   temperature, pressure);
                             }
+
                         }
 
                         /* add aerosol opacities to atmosphere, if clouds turned on */
-                        if(CLOUDS==1){
+                        if(CLOUDS==1)
+                        {
                             kappa_nu += aero_lw_kappa_interp_1;                            
                             kappa_nu += aero_lw_kappa_interp_2;
                             kappa_nu += aero_lw_kappa_interp_3;
                             kappa_nu += aero_lw_kappa_interp_4;
                         }
+
                         dtau_em[l][m][j] = kappa_nu * dl[l][m][j];
                     }
                 }
             }
         }
+        
         for(l=0; l<NLAT; l++)
         {
             for(m=0; m<NLON; m++)
@@ -646,6 +661,7 @@ int RT_Emit_3D(double PHASE)
             for(m=0; m<NLON; m++){
                 if(atmos.lon[m]>=450.0-PHASE && atmos.lon[m]<=630.0-PHASE)
                 {
+
                     intensity[l][m] = Planck(atmos.T_3d[l][m][NTAU-1], atmos.lambda[i]) * exp(-tau_em[l][m][NTAU-1]);
                     I_top[l][m] = Planck(temperature_3d[l][m][0], atmos.lambda[i]);
                 }
@@ -657,7 +673,6 @@ int RT_Emit_3D(double PHASE)
         for(l=0; l<NLAT; l++){
             for(m=0; m<NLON; m++){
                 if(atmos.lon[m]>=450.0-PHASE && atmos.lon[m]<=630.0-PHASE){
-                    //printf("\n\n\n");
                     for(j=0; j<NTAU; j++)
                     {   
                         intensity[l][m] += Planck(temperature_3d[l][m][j], atmos.lambda[i]) * exp(-tau_em[l][m][j]) * dtau_em[l][m][j];
@@ -675,7 +690,7 @@ int RT_Emit_3D(double PHASE)
                 {
                     // Find the number of 0 elements in tau and temp
                     kmin=0;
-                    while(tau_em[l][m][kmin] < 1e-10)
+                    while(tau_em[l][m][kmin] < 1e-10 && kmin < NTAU-1)
                     {
                         kmin += 1;
                     }
@@ -689,15 +704,17 @@ int RT_Emit_3D(double PHASE)
                         incident_frac = atmos.incident_frac[l][m][NTAU-1];
                     }
 
-                    // Get the intensity at the top of the atmosphere
-                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.00, 0.00, atmos.T_3d[l][m], tau_em[l][m], \
-                    CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);
+
+                    //malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.99, 0.99, atmos.T_3d[l][m], tau_em[l][m], \
+                    //CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);
+
+                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.99, 0.99, atmos.T_3d[l][m], tau_em[l][m], \
+                    5.0e14, CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);
 
                 }
             }
         }
         
-
         
         /*Calculate the total flux received by us*/
         FILE *fptr = fopen("/home/imalsky/Desktop/intensity.txt", "w"); 

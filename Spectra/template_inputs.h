@@ -16,7 +16,7 @@ Defines input values and files for 3-D emission spectra
 /* Output settings */
 #define N_PHASE 1                          /* Number of phases [96 max; lon grid in increments of 3.75] */
 #define DOPPLER <<doppler>>                /* 0:Off; 1:On */
-#define CLOUDS 1                           /* 0:Off; 1:On */
+#define CLOUDS 0                           /* 0:Off; 1:On */
 
 /* Grid settings */
 #define NTAU 60                            /* Number of altitude points in grid      */
@@ -25,7 +25,7 @@ Defines input values and files for 3-D emission spectra
 
 #define NTEMP 30                           /* Number of temperature points in grid   */
 #define NPRESSURE 13                       /* Number of pressure points in grid   [13/17]   */
-#define NLAMBDA 5000                       /* Number of wavelength points in grid [4616/2598]   */
+#define NLAMBDA 6000                          /* Number of wavelength points in grid [4616/2598]   */
 
 /* Planet parameters */
 #define INPUT_INCLINATION <<inclination>>        /* Planet inclination in radians            */
@@ -33,7 +33,7 @@ Defines input values and files for 3-D emission spectra
 #define G 12.9324                          /* Planet surface gravity                 */
 #define R_PLANET 1.287e+08                 /* Planet radius at base of atmosphere      */
 
-#define ORB_SEP 5.0e+20                     // Orbital Separation This is 1 au in m
+#define ORB_SEP 1.0e+10                    // Orbital Separation This is 1 au in m
 #define STELLAR_TEMP 6000.0                // Stellar Blackbody temperature
 #define R_STAR 1.296e+09                   /* Stellar radius                         */
 #define P_ROT 4.6171                       /* Rotation period in days (= P_ORB for tidally locked planet)    */
