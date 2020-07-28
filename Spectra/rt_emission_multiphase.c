@@ -697,11 +697,11 @@ int RT_Emit_3D(double PHASE)
                         incident_frac = atmos.incident_frac[l][m][NTAU-1];
                     }
 
-                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.00, 0.00, atmos.T_3d[l][m], tau_em[l][m], \
-                    CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);
+                    //malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.00, 0.00, atmos.T_3d[l][m], tau_em[l][m], \
+                    //CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);
 
-                    //malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.8, 0.00, atmos.T_3d[l][m], tau_em[l][m], \
-                    //1.0e14, CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, 1.0);
+                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.1, 0.0, atmos.T_3d[l][m], tau_em[l][m], \
+                    1e14, CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, 1.0);
 
                 }
             }

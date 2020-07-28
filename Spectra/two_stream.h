@@ -323,7 +323,8 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   // BEGINNING OF THE TRIDIAGONAL SOLUTION DDINITIONS. I ASSUME NO
   // DIFFUSE RADIATION IS INCIDENT AT THE TOP.
 
-  E[0] = -CM[0];
+  //E[0] = -CM[0];
+  E[0] = e3[0] * (CP[1] - CPB[0]) + e1[0] * (CMB[0] - CM[1]); // OOps?
   E[2*NEW_NLAYER-1]  = SFCS + RSFX * CMB[NEW_NLAYER-1] - CPB[NEW_NLAYER-1];
   DS[2*NEW_NLAYER-1] = E[2*NEW_NLAYER-1] / B[2*NEW_NLAYER-1];
   AS[2*NEW_NLAYER-1] = A[2*NEW_NLAYER-1] / B[2*NEW_NLAYER-1];
@@ -350,14 +351,13 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   //***************************************************************
 
   // I reverse the list here because that's how it wants it in Eliza's code
+  //printf("\n\n\n\n");
   for(J=1; J<NEW_NLAYER+1; J++)
   {
-    FNET[NEW_NLAYER-J] = Y[2*J-2] * (e1[J-1]-e3[J-1]) + Y[2*J-2] \
-                 * (e2[J-1]-e4[J-1]) + CPB[J-1] - CMB[J-1] - DIRECT_HEMISPHERIC;
-
     TMI[NEW_NLAYER-J] = (1.0 / mu_1) * (Y[2*J-2]*(e1[J-1] + e3[J-1]) + Y[2*J-1] * (e2[J-1]+e4[J-1]) \
              + CPB[J-1] + CMB[J-1]) +  (DIRECT_HEMISPHERIC / mu_0);
-
+    
+    //printf("%.8e %.8e %.8e\n", Y[2*J-2], e4[J-1], TMI[NEW_NLAYER-J] / (4 * PI * 1e15));
     HEMISPHERIC_TWO_STREAM[NEW_NLAYER-J] = TMI[NEW_NLAYER-J];
   }
 
@@ -449,7 +449,6 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   mu_1 = 0.5773;
   EMIS = 1.0;
   RSFX = 1.0;
-
   SFCS_QUADRATURE = RSFX * mu_0 * exp(-(TAUCS[NEW_NLAYER-1]) / mu_0) * PI * FLUX_SURFACE_QUADRATURE;
 
   // HERE WE FIND LAYER PROPERTIES FOLLOWING GENERAL SCHEME
@@ -460,6 +459,7 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   {
     y1[J] = 0.866 * (2.0 - (W0[J] * (1.0 + G0[J])));
     y2[J] = 0.866 * (W0[J] * (1.0 - G0[J]));
+
     y3[J] = 0.5   * (1.0 - G0[J]);
     y4[J] = 1.0   - (y3[J]);
 
@@ -482,7 +482,7 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
     B[L]   =  e2[J+1] * e2[J]   - e4[J+1] * e4[J];
     D[L]   =  e1[J+1] * e4[J+1] - e3[J+1] * e2[J+1];
   
-    // HERE ARE THE ODD MATRIX ELEMENTS EXCEPT FOR THE TOP. 
+    // HERE ARE THE ODD MATRIX ELEMENTS EXCEPT FOR THE TOP.
     A[L+1] =  e2[J]   * e3[J]   - e1[J]   * e4[J];
     B[L+1] =  e1[J+1] * e1[J]   - e3[J+1] * e3[J]; 
     D[L+1] =  e3[J]   * e4[J+1] - e1[J]   * e2[J+1];
@@ -542,6 +542,8 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
              (pow(LAMBDAS[J], 2.0) - (1.0 / pow(mu_0, 2.0)));
   }
 
+
+
   J = 0;
   for(L=1; L<2*NEW_NLAYER; L+=2)
   {
@@ -557,8 +559,9 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   // BEGINNING OF THE TRIDIAGONAL SOLUTION DDINITIONS. I ASSUME NO
   // DIFFUSE RADIATION IS INCIDENT AT THE TOP.
 
-  E[0] = -CM[0];
-  E[2*NEW_NLAYER-1]  = SFCS_QUADRATURE + RSFX * CMB[NEW_NLAYER-1] - CPB[NEW_NLAYER-1];
+  //E[0] = -CM[0];
+  E[0] = e3[0] * (CP[1] - CPB[0]) + e1[0] * (CMB[0] - CM[1]); // OOps?
+  E[2*NEW_NLAYER-1]  = SFCS_QUADRATURE - CPB[NEW_NLAYER-1] + (RSFX * CMB[NEW_NLAYER-1]);
   DS[2*NEW_NLAYER-1] = E[2*NEW_NLAYER-1] / B[2*NEW_NLAYER-1];
   AS[2*NEW_NLAYER-1] = A[2*NEW_NLAYER-1] / B[2*NEW_NLAYER-1];
 
@@ -586,11 +589,13 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   // I reverse the list here because that's how it wants it in Eliza's code
   for(J=1; J<NEW_NLAYER+1; J++)
   {
-    FNET[NEW_NLAYER-J] = Y[2*J-2] * (e1[J-1]-e3[J-1]) + Y[2*J-2] \
-                 * (e2[J-1]-e4[J-1]) + CPB[J-1] - CMB[J-1] - DIRECT_QUADRATURE[J];
 
-    TMI[NEW_NLAYER-J] = (1.0 / mu_1) * (Y[2*J-2]*(e1[J-1] + e3[J-1]) + Y[2*J-1] * (e2[J-1]+e4[J-1]) \
-             + CPB[J-1] + CMB[J-1]) +  (DIRECT_QUADRATURE[J] / mu_0);
+    //TMI[NEW_NLAYER-J] = (1.0 / mu_1) * (Y[2*J-2]*(e1[J-1] + e3[J-1]) + Y[2*J-1] * (e2[J-1]+e4[J-1]) \
+    //         + CPB[J-1] + CMB[J-1]) +  (DIRECT_QUADRATURE[J] / mu_0);
+
+    
+    TMI[NEW_NLAYER-J] = (1.0 / mu_1) * (Y[2*J-2]*(e1[J-1] + e3[J-1]) + (Y[2*J-1] * (e2[J-1] + e4[J-1])) \
+         + CPB[J-1] + CMB[J-1]);
 
     QUADRATURE_TWO_STREAM[NEW_NLAYER-J] = TMI[NEW_NLAYER-J];
   }
@@ -598,12 +603,13 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
 
   QUADRATURE_TWO_STREAM_TOP = QUADRATURE_TWO_STREAM[NEW_NLAYER-1] / (4.0 * PI);
 
-  printf("\n\n\n\n");
+  printf("\n\n\n");
   for(J=0; J<NEW_NLAYER; J++)
   {
-    printf("%.8e, %.8e, %.8e, \n", HEMISPHERIC_TWO_STREAM[NEW_NLAYER-J-1] / (1e15 * 4.0 * PI),\
+    printf("%.8e, %.8e, %.8e, %.8e, \n", HEMISPHERIC_TWO_STREAM[NEW_NLAYER-J-1] / (1e15 * 4.0 * PI),\
                                     HEMISPHERIC_SOURCE_FNC[J] / (1e15 * 2.0 * PI), 
-                                    QUADRATURE_TWO_STREAM[NEW_NLAYER-J-1] / (4.0 * PI));
+                                    QUADRATURE_TWO_STREAM[NEW_NLAYER-J-1] / (4.0 * PI),
+                                    DIRECT_QUADRATURE[J]);
   }
 
 
