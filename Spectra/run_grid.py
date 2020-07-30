@@ -106,7 +106,7 @@ def run_all_grid(planet_name, phases,inclinations, sytem_obliquity):
             df = df.apply(wind_rot, axis=1)
 
             running_df = pd.DataFrame(columns=['lon', 'lat', 'temp', 'pres', 'alt', 'u', 'v', 'w', 'incident_frac'])
-            levels = np.linspace(1, 60, 60)
+            levels = np.linspace(1, NTAU, NTAU)
             for level in levels:
                 sub_df = df[(df['level'] == level)].reset_index(drop=True)
 
@@ -190,9 +190,6 @@ def run_all_grid(planet_name, phases,inclinations, sytem_obliquity):
 
                 # Filter out stuff where Exotransmit wants 0s
                 big_df['temp'][temp_test['temp'] < 100] = 0
-                #big_df['pres'][temp_test['temp'] < 100] = 0
-                #big_df['u'][temp_test['temp'] < 100] = 0
-                #big_df['v'][temp_test['temp'] < 100] = 0
 
                 # Merge the dataframes
                 frames = [running_df, big_df]

@@ -12,32 +12,35 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
 
   // These are indexing values
   int J, L, KINDEX, Z, M;
+
+  // The number of layers in the atmosphere
   int NEW_NLAYER;
 
   // These are just constants
   double bolz_constant = 1.380649e-23;
   double h_constant    = 6.62607015e-34;
 
-  // These are boundary conditions are values for the flux stuff
+  // These are boundary conditions
+  // They vary for long wave and short wave
   double EMIS;
   double RSFX;
-  double redistribution_param = 1.0;
-
-  double SFCS;
-  double DIRECT_HEMISPHERIC;
-
+  double SFCS_HEMISPHERIC;
   double SFCS_QUADRATURE;
+
+  // The direct radiation from the star
+  double DIRECT_HEMISPHERIC[NLAYER - kmin];
   double DIRECT_QUADRATURE[NLAYER - kmin];
+
+  // The flux at the surface of the planet
+  // The very top, not the boundary between bottom and atmosphere
   double FLUX_SURFACE_QUADRATURE;
   double FLUX_SURFACE_HEMISPHERIC;
 
-
+  // Blackbody intensities
+  // All SI units, all in the same units as the returned intensity
   double STELLAR_BB;
   double BB_TOP_OF_ATM;
   double BB_BOTTOM_OF_ATM;
-
-  // Frequency Stuff
-  double B_SPECTRAL_DENSITY_VAL;
 
   // Scattering and atmosphere parameters
   double W0[NLAYER - kmin];
@@ -51,10 +54,10 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   // How to generate the matrix from the toon paper
   double y1[NLAYER - kmin];
   double y2[NLAYER - kmin];
-
   double y3[NLAYER - kmin];
   double y4[NLAYER - kmin];
 
+  // More Matrix stuff
   double LAMBDAS[NLAYER - kmin];
   double GAMMA[NLAYER - kmin];
   double temp_e_val[NLAYER - kmin];
@@ -75,19 +78,24 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   double X[2 * (NLAYER - kmin)];
   double Y[2 * (NLAYER - kmin)];
 
-  // More temperatoray matrix soluton stuff
+  // Temporary values, makes math easier for me
   double temp_gamma_val[NLAYER - kmin];
+
+  // Planck Intensities
+  // B1 is the slope of intensities between layers
+  double B0[NLAYER - kmin];
+  double B1[NLAYER - kmin];
+
+  // Stuff for solving the blackbody equation
+  double Bnu, twohnu3_c2, hc_Tkla;
+  double temp_val_1, temp_val_2;
+
+  // Matrix values, related to the intensity at each layer
+  // These set differently for the quadrature and hemipsheric solutions
   double CP[NLAYER - kmin];
   double CPB[NLAYER - kmin];
   double CM[NLAYER - kmin];
   double CMB[NLAYER - kmin];
-
-  // Planck Function Stuff, and the slope
-  double B0[NLAYER - kmin];
-  double B1[NLAYER - kmin];
-  double FNET[NLAYER - kmin];
-  double Bnu, twohnu3_c2, hc_Tkla;
-  double temp_val_1, temp_val_2;
 
   // The Source Function Variables
   double SOURCE_G[NLAYER - kmin];
@@ -106,38 +114,37 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   double INTENSITY_DOWN[NLAYER - kmin];
   double INTENSITY_UP[NLAYER - kmin];
 
-
-
-  // Important Stuff
+  // Final values for long wave radiation
   double HEMISPHERIC_TWO_STREAM[NLAYER - kmin];
   double HEMISPHERIC_SOURCE_FNC[NLAYER - kmin];
 
+  // Final values for short wave radiation
   double QUADRATURE_TWO_STREAM[NLAYER - kmin];
   double QUADRATURE_SOURCE_FNC[NLAYER - kmin];
 
-
-
-  // Top Layer values
+  // Top Layer values long wave
   double HEMISPHERIC_TWO_STREAM_TOP;
   double HEMISPHERIC_SOURCE_FNC_TOP;
 
+  // Top layer values short wave
   double QUADRATURE_TWO_STREAM_TOP;
   double QUADRATURE_SOURCE_FNC_TOP;
 
   // The number of layers
   // Sometimes the inputs are bad and the top
-  // Of the layers need to be cut off
   NEW_NLAYER = NLAYER - kmin;
-
 
   // Calculate the flux at the top of the atmosphere from the star
   temp_val_1 = (2.0 * h_constant * (NU * NU * NU)) / (CLIGHT * CLIGHT);
   temp_val_2 = exp(h_constant * NU / (bolz_constant * STELLAR_TEMP)) - 1.0;
   STELLAR_BB = temp_val_1 * (1.0 / temp_val_2);
 
-  FLUX_SURFACE_QUADRATURE = incident_frac * PI * STELLAR_BB * pow(R_STAR / ORB_SEP, 2.0);
+  // Get the flux at the surface of the atmpsphere
   FLUX_SURFACE_HEMISPHERIC = 0;
+  FLUX_SURFACE_QUADRATURE = incident_frac * PI * STELLAR_BB * pow(R_STAR / ORB_SEP, 2.0);
+  
 
+  // Assign arrays for the characteristics of the atmosphere based on the input arrays
   for (J=0; J<NEW_NLAYER; J++)
   {
     W0[J] = w0_val;
@@ -149,13 +156,11 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
     TAULS[J] =  -1.0 * (tau_array[J+kmin] - tau_array[J+kmin + 1]);
 
     DIRECT_QUADRATURE[J]  = mu_0 * PI * FLUX_SURFACE_QUADRATURE * exp(-1.0 * (TAUCS[J] + TAULS[J]) / mu_0);
-    DIRECT_HEMISPHERIC = 0.0;
-
-    //printf("%.8e %.8e \n", TEMPS[J], TAULS[J]);
+    DIRECT_HEMISPHERIC[J] = 0.0;
   }
 
   //**********************************************
-  //* Data Sanitation (Sorry, kinda gross code)  *
+  //*               Data Sanitation              *
   //**********************************************
 
   for (J=0; J<10; J++)
@@ -193,27 +198,24 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
 
 
 
+  //***************************************************************************************
+  //***************************************************************************************
+  //***************************************************************************************
+  //***************************************************************************************
+  //***************************************************************************************
 
 
 
+  //**************************************************
+  //*               Long Wave Solution               *
+  //**************************************************
 
-
-
-
-
-
-
-
-
-
-
-
-  // This is for the IR Wavelengths
+  // Boundary conditions
   mu_1 = 0.5;
   EMIS = 1.0;
   RSFX = 1.0;
 
-  SFCS = EMIS * PI * BB_BOTTOM_OF_ATM;
+  SFCS_HEMISPHERIC = EMIS * PI * BB_BOTTOM_OF_ATM;
 
   // HERE WE FIND LAYER PROPERTIES FOLLOWING GENERAL SCHEME
   // OF MEADOR AND WEAVOR. THEN WE SET UP LAYER PROPERTIES
@@ -276,11 +278,8 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
     temp_val_1 = (2.0 * h_constant * (NU * NU * NU)) / (CLIGHT * CLIGHT);
     temp_val_2 = exp(h_constant * NU / (bolz_constant * TEMPS[J])) - 1.0;
 
-    //B_SPECTRAL_DENSITY_VAL = temp_val_1 * (1.0 / temp_val_2);
-    B_SPECTRAL_DENSITY_VAL = temp_val_1 * (1.0 / temp_val_2) * 1e15; //Magic 1e15 (Dont delete)
 
-
-    B0[J] = B_SPECTRAL_DENSITY_VAL;
+    B0[J] = temp_val_1 * (1.0 / temp_val_2);
     B1[J] = (B0[J] - B0[KINDEX]) / TAULS[J];
   }
 
@@ -323,9 +322,8 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   // BEGINNING OF THE TRIDIAGONAL SOLUTION DDINITIONS. I ASSUME NO
   // DIFFUSE RADIATION IS INCIDENT AT THE TOP.
 
-  //E[0] = -CM[0];
-  E[0] = e3[0] * (CP[1] - CPB[0]) + e1[0] * (CMB[0] - CM[1]); // OOps?
-  E[2*NEW_NLAYER-1]  = SFCS + RSFX * CMB[NEW_NLAYER-1] - CPB[NEW_NLAYER-1];
+  E[0] = e3[0] * (CP[1] - CPB[0]) + e1[0] * (CMB[0] - CM[1]);
+  E[2*NEW_NLAYER-1]  = SFCS_HEMISPHERIC + RSFX * CMB[NEW_NLAYER-1] - CPB[NEW_NLAYER-1];
   DS[2*NEW_NLAYER-1] = E[2*NEW_NLAYER-1] / B[2*NEW_NLAYER-1];
   AS[2*NEW_NLAYER-1] = A[2*NEW_NLAYER-1] / B[2*NEW_NLAYER-1];
 
@@ -355,7 +353,7 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   for(J=1; J<NEW_NLAYER+1; J++)
   {
     TMI[NEW_NLAYER-J] = (1.0 / mu_1) * (Y[2*J-2]*(e1[J-1] + e3[J-1]) + Y[2*J-1] * (e2[J-1]+e4[J-1]) \
-             + CPB[J-1] + CMB[J-1]) +  (DIRECT_HEMISPHERIC / mu_0);
+             + CPB[J-1] + CMB[J-1]) +  (DIRECT_HEMISPHERIC[J] / mu_0);
     
     //printf("%.8e %.8e %.8e\n", Y[2*J-2], e4[J-1], TMI[NEW_NLAYER-J] / (4 * PI * 1e15));
     HEMISPHERIC_TWO_STREAM[NEW_NLAYER-J] = TMI[NEW_NLAYER-J];
@@ -417,35 +415,25 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
     HEMISPHERIC_SOURCE_FNC[J] = INTENSITY_UP[J];
   }
   
-  HEMISPHERIC_TWO_STREAM_TOP = HEMISPHERIC_TWO_STREAM[NEW_NLAYER-1] / (1e15 * 4.0 * PI);
-  HEMISPHERIC_SOURCE_FNC_TOP = HEMISPHERIC_SOURCE_FNC[0]  / (1e15 * 2.0 * PI);
-  
+  HEMISPHERIC_TWO_STREAM_TOP = HEMISPHERIC_TWO_STREAM[NEW_NLAYER-1] / (4.0 * PI);
+  HEMISPHERIC_SOURCE_FNC_TOP = HEMISPHERIC_SOURCE_FNC[0]  / (2.0 * PI);
 
 
 
 
+  //***************************************************************************************
+  //***************************************************************************************
+  //***************************************************************************************
+  //***************************************************************************************
+  //***************************************************************************************
 
 
 
+  //**************************************************
+  //*               Short Wave Solution               *
+  //**************************************************
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  // Boundary conditions
   mu_1 = 0.5773;
   EMIS = 1.0;
   RSFX = 1.0;
@@ -589,30 +577,22 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   // I reverse the list here because that's how it wants it in Eliza's code
   for(J=1; J<NEW_NLAYER+1; J++)
   {
-
-    //TMI[NEW_NLAYER-J] = (1.0 / mu_1) * (Y[2*J-2]*(e1[J-1] + e3[J-1]) + Y[2*J-1] * (e2[J-1]+e4[J-1]) \
-    //         + CPB[J-1] + CMB[J-1]) +  (DIRECT_QUADRATURE[J] / mu_0);
-
-    
-    TMI[NEW_NLAYER-J] = (1.0 / mu_1) * (Y[2*J-2]*(e1[J-1] + e3[J-1]) + (Y[2*J-1] * (e2[J-1] + e4[J-1])) \
-         + CPB[J-1] + CMB[J-1]);
-
+    TMI[NEW_NLAYER-J] = (1.0 / mu_1) * (Y[2*J-2]*(e1[J-1] + e3[J-1]) + (Y[2*J-1] * (e2[J-1] + e4[J-1])) + CPB[J-1] + CMB[J-1]);
     QUADRATURE_TWO_STREAM[NEW_NLAYER-J] = TMI[NEW_NLAYER-J];
   }
 
 
   QUADRATURE_TWO_STREAM_TOP = QUADRATURE_TWO_STREAM[NEW_NLAYER-1] / (4.0 * PI);
 
-  printf("\n\n\n");
-  for(J=0; J<NEW_NLAYER; J++)
-  {
-    printf("%.8e, %.8e, %.8e, %.8e, \n", HEMISPHERIC_TWO_STREAM[NEW_NLAYER-J-1] / (1e15 * 4.0 * PI),\
-                                    HEMISPHERIC_SOURCE_FNC[J] / (1e15 * 2.0 * PI), 
-                                    QUADRATURE_TWO_STREAM[NEW_NLAYER-J-1] / (4.0 * PI),
-                                    DIRECT_QUADRATURE[J]);
-  }
-
-
+  //printf("\n\n\n");
+  //for(J=0; J<NEW_NLAYER; J++)
+  //{
+  //  printf("%.8e, %.8e, %.8e, %.8e, %.8e\n", HEMISPHERIC_TWO_STREAM[NEW_NLAYER-J-1] / (4.0 * PI),\
+  //                                 HEMISPHERIC_SOURCE_FNC[J] / (2.0 * PI), 
+  //                                 QUADRATURE_TWO_STREAM[NEW_NLAYER-J-1] / (4.0 * PI),
+  //                                 HEMISPHERIC_TWO_STREAM_TOP,
+  //                                 QUADRATURE_TWO_STREAM_TOP);
+  //}
 
   return HEMISPHERIC_SOURCE_FNC_TOP + QUADRATURE_TWO_STREAM_TOP;
 }

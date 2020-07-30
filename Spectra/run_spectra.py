@@ -12,6 +12,7 @@ import run_grid
 phases = [90.0]
 inclinations = [0.3]
 sytem_obliquity = 0
+NTAU = 0
 
 planet_name = 'low_grav_clear'
 
@@ -70,12 +71,12 @@ def add_columns(phases, inclinations):
 
 def run_exo(input_paths, inclination_strs, phase_strs, doppler_val):
     """
-    Comment
+    This runs Eliza's code
     """
     inputs_file = 'input.h'
     output_paths = []
 
-    # The output paths should be similar to the input paxxxsths
+    # The output paths should be similar to the input paths
     # Minus the .dat file extension and saved to OUT/
     for file_path in input_paths:
         output_paths.append('OUT/Spec_' + str(doppler_val) + '_' + file_path[11:-4])
@@ -118,7 +119,7 @@ def run_exo(input_paths, inclination_strs, phase_strs, doppler_val):
         os.system('./rt_emission_aerosols.exe')
 
 
-#run_grid.run_all_grid(planet_name, phases, inclinations, sytem_obliquity)
+#run_grid.run_all_grid(planet_name, phases, inclinations, sytem_obliquity, NTAU)
 input_paths, inclination_strs, phase_strs = add_columns(phases, inclinations)
 
 # 0 is off

@@ -431,9 +431,8 @@ int RT_Emit_3D(double PHASE)
         
 
     // THIS IS TEMPORARY
-    //FIIXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXx
-    //for(i=0; i<NLAMBDA; i++)
-    for(i=30; i<31; i++)
+    //for(i=30; i<31; i++)
+    for(i=0; i<NLAMBDA; i++)
     {
         for(l=0; l<NLAT; l++)
         {
@@ -629,6 +628,7 @@ int RT_Emit_3D(double PHASE)
             }
         }
         
+        /*
         for(l=0; l<NLAT; l++)
         {
             for(m=0; m<NLON; m++)
@@ -676,6 +676,7 @@ int RT_Emit_3D(double PHASE)
                }
             }
         }
+        */
 
         for(l=0; l<NLAT; l++)
         {
@@ -684,6 +685,8 @@ int RT_Emit_3D(double PHASE)
                 if(atmos.lon[m]>=450.0-PHASE && atmos.lon[m]<=630.0-PHASE)
                 {
                     // Find the number of 0 elements in tau and temp
+                    // This gets passes to the two stream function
+                    // This is so the two stream arrays ignore 0 elements
                     kmin=0;
                     while(tau_em[l][m][kmin] < 1e-10 && kmin < NTAU-1)
                     {
@@ -691,25 +694,30 @@ int RT_Emit_3D(double PHASE)
                     }
                     
                     // Grab the incident sunlight fraction
+                    // This should be defined in the file being passed in
+                    // Incident fractions below 0 correspond to parts
+                    // of the planet that solar radiation does not hit
                     incident_frac = 0;
                     if (atmos.incident_frac[l][m][NTAU-1] > 0)
                     {
                         incident_frac = atmos.incident_frac[l][m][NTAU-1];
                     }
-
-                    //malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.00, 0.00, atmos.T_3d[l][m], tau_em[l][m], \
+                    
+                    // This is where the magic happens
+                    // We solve the two stream equations in https://ui.adsabs.harvard.edu/abs/1989JGR....9416287T/abstract
+                    // Please don't break this
+                    //malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.1, 0.1, atmos.T_3d[l][m], tau_em[l][m], \
                     //CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);
 
-                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.1, 0.0, atmos.T_3d[l][m], tau_em[l][m], \
-                    1e14, CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, 1.0);
-
+                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.00, 0.00, atmos.T_3d[l][m], tau_em[l][m], \
+                    CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, 1.0);                    
                 }
             }
         }
         
         
         /*Calculate the total flux received by us*/
-        FILE *fptr = fopen("/home/imalsky/Desktop/intensity.txt", "w"); 
+        //FILE *fptr = fopen("../Testing/02W0_00g0.txt", "w"); 
         flux_pl[i] = 0.0;
         for(l=0; l<NLAT; l++)
         {
@@ -717,14 +725,14 @@ int RT_Emit_3D(double PHASE)
             {
                 if(atmos.lon[m]>=450.0-PHASE && atmos.lon[m]<=630.0-PHASE)
                 {                    
-                    fprintf(fptr, "%d, %d, %.8e, %.8e\n", l, m, intensity[l][m], malsky_intensity[l][m]);
+                    //fprintf(fptr, "%d, %d, %.8e, %.8e\n", l, m, intensity[l][m], malsky_intensity[l][m]);
                     flux_pl[i] += malsky_intensity[l][m] * fabs(SQ(cos(lat_rad[l]))*cos(lon_rad[m]-PI-PHASE*PI/180.0)*dlat_rad[l]*dlon_rad[m]);
+                    //flux_pl[i] += intensity[l][m] * fabs(SQ(cos(lat_rad[l]))*cos(lon_rad[m]-PI-PHASE*PI/180.0)*dlat_rad[l]*dlon_rad[m]);
+
                 }
             }
         }
-        fclose(fptr); 
-
-
+        //fclose(fptr); 
         
         if(i % 100 == 0)
         {
