@@ -431,8 +431,8 @@ int RT_Emit_3D(double PHASE)
         
 
     // THIS IS TEMPORARY
-    //for(i=30; i<31; i++)
-    for(i=0; i<NLAMBDA; i++)
+    for(i=30; i<31; i++)
+    //for(i=0; i<NLAMBDA; i++)
     {
         for(l=0; l<NLAT; l++)
         {
@@ -628,7 +628,7 @@ int RT_Emit_3D(double PHASE)
             }
         }
         
-        /*
+        
         for(l=0; l<NLAT; l++)
         {
             for(m=0; m<NLON; m++)
@@ -650,7 +650,7 @@ int RT_Emit_3D(double PHASE)
             }
         }
 
-
+        /*
         // Calculate the intensity of emergent rays at each latitude and longitude
         for(l=0; l<NLAT; l++){
             for(m=0; m<NLON; m++){
@@ -663,7 +663,6 @@ int RT_Emit_3D(double PHASE)
             }
         }
  
-        
 
         for(l=0; l<NLAT; l++){
             for(m=0; m<NLON; m++){
@@ -706,11 +705,8 @@ int RT_Emit_3D(double PHASE)
                     // This is where the magic happens
                     // We solve the two stream equations in https://ui.adsabs.harvard.edu/abs/1989JGR....9416287T/abstract
                     // Please don't break this
-                    //malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.1, 0.1, atmos.T_3d[l][m], tau_em[l][m], \
-                    //CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);
-
-                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.00, 0.00, atmos.T_3d[l][m], tau_em[l][m], \
-                    CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, 1.0);                    
+                    malsky_intensity[l][m] = two_stream(NTAU, kmin, 0.0, 0.0, atmos.T_3d[l][m], tau_em[l][m], \
+                    CLIGHT / atmos.lambda[i], CLIGHT / atmos.lambda[i] - CLIGHT / atmos.lambda[i+1], TMI, incident_frac);        
                 }
             }
         }
@@ -728,7 +724,6 @@ int RT_Emit_3D(double PHASE)
                     //fprintf(fptr, "%d, %d, %.8e, %.8e\n", l, m, intensity[l][m], malsky_intensity[l][m]);
                     flux_pl[i] += malsky_intensity[l][m] * fabs(SQ(cos(lat_rad[l]))*cos(lon_rad[m]-PI-PHASE*PI/180.0)*dlat_rad[l]*dlon_rad[m]);
                     //flux_pl[i] += intensity[l][m] * fabs(SQ(cos(lat_rad[l]))*cos(lon_rad[m]-PI-PHASE*PI/180.0)*dlat_rad[l]*dlon_rad[m]);
-
                 }
             }
         }

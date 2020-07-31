@@ -587,11 +587,9 @@ double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
   //printf("\n\n\n");
   //for(J=0; J<NEW_NLAYER; J++)
   //{
-  //  printf("%.8e, %.8e, %.8e, %.8e, %.8e\n", HEMISPHERIC_TWO_STREAM[NEW_NLAYER-J-1] / (4.0 * PI),\
+  //  printf("%.8e, %.8e, %.8e, \n", HEMISPHERIC_TWO_STREAM[NEW_NLAYER-J-1] / (4.0 * PI),\
   //                                 HEMISPHERIC_SOURCE_FNC[J] / (2.0 * PI), 
-  //                                 QUADRATURE_TWO_STREAM[NEW_NLAYER-J-1] / (4.0 * PI),
-  //                                 HEMISPHERIC_TWO_STREAM_TOP,
-  //                                 QUADRATURE_TWO_STREAM_TOP);
+  //                                 QUADRATURE_TWO_STREAM[NEW_NLAYER-J-1] / (4.0 * PI));
   //}
 
   return HEMISPHERIC_SOURCE_FNC_TOP + QUADRATURE_TWO_STREAM_TOP;

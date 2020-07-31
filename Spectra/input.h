@@ -33,7 +33,7 @@ Defines input values and files for 3-D emission spectra
 #define G 12.9324                          /* Planet surface gravity                 */
 #define R_PLANET 1.287e+08                 /* Planet radius at base of atmosphere      */
 
-#define ORB_SEP 1.0e+12                    // This is some distance
+#define ORB_SEP 1.0e+10                    // This is some distance
 #define STELLAR_TEMP 6000.0                // Stellar Blackbody temperature
 #define R_STAR 1.296e+09                   /* Stellar radius                         */
 #define P_ROT 4.6171                       /* Rotation period in days (= P_ORB for tidally locked planet)    */
