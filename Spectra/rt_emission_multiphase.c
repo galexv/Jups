@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <omp.h>
 
 #include "input.h"
 #include "opac.h"
@@ -431,8 +432,8 @@ int RT_Emit_3D(double PHASE)
         
 
     // THIS IS TEMPORARY
-    for(i=30; i<31; i++)
-    //for(i=0; i<NLAMBDA; i++)
+    //for(i=30; i<31; i++)
+    for(i=0; i<NLAMBDA; i++)
     {
         for(l=0; l<NLAT; l++)
         {
@@ -710,7 +711,7 @@ int RT_Emit_3D(double PHASE)
                 }
             }
         }
-        
+    
         
         /*Calculate the total flux received by us*/
         //FILE *fptr = fopen("../Testing/02W0_00g0.txt", "w"); 

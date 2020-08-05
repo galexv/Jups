@@ -3,7 +3,7 @@ import numpy as np
 from scipy.interpolate import Rbf
 
 
-def run_all_grid(planet_name, phases,inclinations, sytem_obliquity):
+def run_all_grid(planet_name, phases,inclinations, sytem_obliquity, NTAU):
     print ('Running the regridding')
     # This regrids all the stuff
 
