@@ -3,7 +3,7 @@
 double Planck(double T, double lambda);
 
 double two_stream(int NLAYER, int kmin, double w0_val, double g0_val, \
-                 double *temperature_array, double *tau_array, \
+                 const double *temperature_array, const double *tau_array, \
                  double NU, double NU_BIN, double* TMI, double incident_frac)
 {
   double mu_1;        // Param for Quadrature or Hemispheric Mean constant

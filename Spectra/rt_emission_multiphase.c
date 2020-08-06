@@ -26,8 +26,8 @@ double Planck(double T, double lambda);
 
 // This is the code that does the two stream calculation
 // In progress, by Isaac Malsky
-double two_stream(int num_layers, int zero_T_layers, double w0, double g0, double *temperature_array, \
-	double *tau_array, double NU, double NU_BIN, double* TMI, double incident_frac);
+double two_stream(int num_layers, int zero_T_layers, double w0, double g0, const double *temperature_array, \
+	const double *tau_array, double NU, double NU_BIN, double* TMI, double incident_frac);
 
 double lint2D(double x1, double x2, double y1, double y2, double z1,
               double z2, double z3, double z4, double x, double y);
