@@ -678,6 +678,7 @@ int RT_Emit_3D(double PHASE)
         }
         */
 
+#pragma omp parallel for default(none) private(l,m,incident_frac,TMI) shared(atmos,PHASE,kmin,tau_em,i,malsky_intensity) schedule(runtime)
         for(l=0; l<NLAT; l++)
         {
             for(m=0; m<NLON; m++)
