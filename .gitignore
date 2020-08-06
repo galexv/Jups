@@ -1,2 +1,7 @@
 Spectra/OUT/
 Testing/
+*.o
+*.exe
+.ipynb_checkpoints/
+.DS_Store/
+__pycache__/
