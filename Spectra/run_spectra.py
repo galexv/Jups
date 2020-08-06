@@ -116,7 +116,7 @@ def run_exo(input_paths, inclination_strs, phase_strs, doppler_val):
         # Run Eliza's code
         os.system('make clean')
         os.system('make rt_emission_aerosols.exe') 
-        os.system('./rt_emission_aerosols.exe')
+        os.system('/usr/bin/time ./rt_emission_aerosols.exe')
 
 
 #run_grid.run_all_grid(planet_name, phases, inclinations, sytem_obliquity, NTAU)
